@@ -238,4 +238,4 @@ __pycache__/
 # Local data folders
 data/
 output/results/tables
-1_An_direktNachrichten/output
+01_direct_messages_analysis/output
