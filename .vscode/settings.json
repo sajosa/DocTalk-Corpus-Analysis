@@ -1,4 +1,18 @@
 {
     "commentTranslate.engine": "google",
-    "commentTranslate.targetLanguage": "en"
+    "commentTranslate.targetLanguage": "en",
+    "cSpell.words": [
+        "Convo",
+        "direkt",
+        "figsize",
+        "fontsize",
+        "Korpus",
+        "lightgray",
+        "linestyle",
+        "Nachrichten",
+        "xlabel",
+        "xticks",
+        "ylabel",
+        "ylim"
+    ]
 }
