@@ -1,0 +1,8 @@
+message_type,weekday,weekday_name,count,relative_frequency
+Group messages,0,Monday,361,14.173537495092264
+Group messages,1,Tuesday,387,15.19434628975265
+Group messages,2,Wednesday,514,20.180604632901453
+Group messages,3,Thursday,557,21.86886533176286
+Group messages,4,Friday,631,24.774244208873185
+Group messages,5,Saturday,76,2.98390263054574
+Group messages,6,Sunday,21,0.8244994110718492
