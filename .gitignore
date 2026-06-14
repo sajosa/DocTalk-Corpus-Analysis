@@ -239,3 +239,40 @@ __pycache__/
 data/
 output/results/tables
 01_direct_messages_analysis/output
+
+##### Specific to this project #####
+
+# Confidential input data
+data/raw/
+data/processed/
+
+# Confidential outputs
+outputs/confidential/
+
+# Old local outputs during migration
+output/
+01_direct_messages_analysis/output/
+02_group_messages_analysis/output/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environments
+.venv/
+venv/
+.env
+
+# System files
+.DS_Store
+
+# Large / local model files
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.bin
+*.gguf
