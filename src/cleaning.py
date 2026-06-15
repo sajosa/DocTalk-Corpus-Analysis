@@ -320,7 +320,7 @@ def clean_text_lexical(text: str) -> str:
     # 11. Remove residual punctuation and technical symbols
     # ------------------------------------------------------------------
 
-    cleaned = re.sub(r"[<>@#,:;\*\(\)\.]", " ", cleaned)
+    cleaned = re.sub(r"[<>@#,:;\*\(\)\.\"'„“‚‘’`´]", " ", cleaned)
 
     # Hyphens are removed only after meaningful compounds have been handled
     cleaned = cleaned.replace("-", " ")

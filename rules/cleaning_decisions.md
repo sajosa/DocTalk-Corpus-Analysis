@@ -16,3 +16,7 @@ Rule order was adjusted accordingly:
 ## Manual validation: negated ToDo possessive variants
 
 Manual validation showed that variants such as `kein_Todo 's` occurred after initial ToDo normalization. These forms were standardized to `kein_Todo` to avoid artificial token fragmentation in lexical frequency and N-gram analyses.
+
+## Manual validation: quotation marks and apostrophe remnants
+
+Manual validation of the frequency tables showed that quotation marks and apostrophe remnants were preserved as part of tokens, for example `"Wie`, `"antriggern"` or `Fortschritt'`. Residual quotation marks and apostrophe characters were therefore added to the final punctuation-removal step to avoid artificial token fragmentation in frequency and N-gram analyses.
