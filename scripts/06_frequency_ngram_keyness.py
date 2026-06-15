@@ -141,11 +141,11 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
     original_mean = original_word_count / n_messages if n_messages > 0 else 0
     cleaned_mean = cleaned_word_count / n_messages if n_messages > 0 else 0
 
-    reduction_absolute = original_word_count - cleaned_word_count
-    reduction_percent = (
-        reduction_absolute / original_word_count * 100
-        if original_word_count > 0
-        else 0
+    token_difference = cleaned_word_count - original_word_count
+    relative_difference_percent = (
+    token_difference / original_word_count * 100
+    if original_word_count > 0
+    else 0
     )
 
     summary = pd.DataFrame(
@@ -157,8 +157,8 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
                 "word_count_cleaned": cleaned_word_count,
                 "mean_words_per_message_original": original_mean,
                 "mean_words_per_message_cleaned": cleaned_mean,
-                "absolute_difference": reduction_absolute,
-                "relative_difference_percent": reduction_percent,
+                "token_difference_cleaned_minus_original": token_difference,
+                "relative_difference_percent": relative_difference_percent,
             }
         ]
     )
