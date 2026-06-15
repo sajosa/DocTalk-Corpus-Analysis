@@ -248,7 +248,7 @@ def clean_text_lexical(text: str) -> str:
             flags=re.IGNORECASE,
         )
 
-    # ------------------------------------------------------------------
+   # ------------------------------------------------------------------
     # 8. Harmonize ToDo expressions and preserve negations
     # ------------------------------------------------------------------
 
@@ -266,13 +266,20 @@ def clean_text_lexical(text: str) -> str:
         flags=re.IGNORECASE,
     )
 
+    # Remove possessive/apostrophe remnants after standardized negated ToDo tokens
+    cleaned = re.sub(
+        r"\bkein_Todo\s*['’`´]?\s*s\b",
+        " kein_Todo ",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
     cleaned = re.sub(
         r"\bto[\s-]?dos?\b|\btodo'?s?\b|\btodos\b",
         " Todo ",
         cleaned,
         flags=re.IGNORECASE,
     )
-
     # ------------------------------------------------------------------
     # 9. Remove non-informative salutations
     # ------------------------------------------------------------------

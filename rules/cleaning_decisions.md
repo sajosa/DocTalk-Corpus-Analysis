@@ -11,3 +11,8 @@ Rule order was adjusted accordingly:
 2. `@<Vorname><Nachname>` / `@<Nachname>` → `Mention_KolName`
 3. `<Vorname><Nachname>` → `KolName`
 4. remaining `<Nachname>` → `PatName`
+
+
+## Manual validation: negated ToDo possessive variants
+
+Manual validation showed that variants such as `kein_Todo 's` occurred after initial ToDo normalization. These forms were standardized to `kein_Todo` to avoid artificial token fragmentation in lexical frequency and N-gram analyses.
