@@ -11,9 +11,12 @@ and group-message corpora.
 
 This script calculates:
 - word counts before and after lexical cleaning
-- token frequencies
-- bigrams
-- trigrams
+- token frequencies, all tokens
+- token frequencies, content tokens after stopword filtering
+- bigrams, all tokens
+- bigrams, content tokens after stopword filtering
+- trigrams, all tokens
+- trigrams, content tokens after stopword filtering
 
 The script uses the cleaned corpus tables produced by:
 
@@ -30,6 +33,15 @@ Each input file must contain:
 
     text_original
     text_clean_lexical
+
+Stopwords
+---------
+Expected stopword file:
+
+    rules/stopwords_custom.txt
+
+The file should contain one stopword per line.
+Empty lines and lines starting with '#' are ignored.
 
 Outputs
 -------
@@ -51,7 +63,6 @@ Optional:
 """
 
 import argparse
-import re
 from collections import Counter
 from pathlib import Path
 
@@ -66,6 +77,7 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 
 INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "public" / "tables"
+STOPWORDS_FILE = PROJECT_DIR / "rules" / "stopwords_custom.txt"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -85,8 +97,66 @@ CORPUS_CONFIG = {
 
 
 # ---------------------------------------------------------------------
-# Tokenization and counting helpers
+# Protected analytical tokens
 # ---------------------------------------------------------------------
+
+PROTECTED_TOKENS = {
+    "PatName",
+    "KolName",
+    "Mention_KolName",
+    "Mention_All",
+    "Hashtag_PatName",
+    "Todo",
+    "kein_Todo",
+    "Datum",
+    "Monat",
+    "Jahr",
+    "Klinik",
+    "Klinikstandort",
+    "Telefonnummer",
+    "Link",
+    "Link_intern",
+    "Ort",
+    "Station",
+    "Übergabe",
+    "Rückmeldung",
+}
+
+
+# ---------------------------------------------------------------------
+# Tokenization and stopword helpers
+# ---------------------------------------------------------------------
+
+def load_stopwords(stopwords_file: Path) -> set[str]:
+    """
+    Load custom stopwords from a text file.
+
+    One stopword per line. Empty lines and lines starting with '#'
+    are ignored.
+    """
+
+    if not stopwords_file.exists():
+        print(f"Warning: Stopwords file not found: {stopwords_file}")
+        return set()
+
+    stopwords = set()
+
+    with open(stopwords_file, "r", encoding="utf-8") as file:
+        for line in file:
+            word = line.strip()
+
+            if not word:
+                continue
+
+            if word.startswith("#"):
+                continue
+
+            stopwords.add(word.lower())
+
+    print(f"Loaded {len(stopwords)} stopwords from: {stopwords_file}")
+
+    return stopwords
+
 
 def simple_tokenize(text: str) -> list[str]:
     """
@@ -108,6 +178,25 @@ def simple_tokenize(text: str) -> list[str]:
     return text.split()
 
 
+def filter_content_tokens(tokens: list[str], stopwords: set[str]) -> list[str]:
+    """
+    Remove stopwords from a token list while preserving standardized
+    analytical tokens such as PatName, KolName, Todo, and kein_Todo.
+    """
+
+    content_tokens = []
+
+    for token in tokens:
+        if token in PROTECTED_TOKENS:
+            content_tokens.append(token)
+            continue
+
+        if token.lower() not in stopwords:
+            content_tokens.append(token)
+
+    return content_tokens
+
+
 def count_words_in_series(text_series: pd.Series) -> int:
     """
     Count whitespace-separated tokens in a pandas Series.
@@ -121,6 +210,10 @@ def count_words_in_series(text_series: pd.Series) -> int:
         .sum()
     )
 
+
+# ---------------------------------------------------------------------
+# Word counts
+# ---------------------------------------------------------------------
 
 def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFrame:
     """
@@ -143,9 +236,9 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
 
     token_difference = cleaned_word_count - original_word_count
     relative_difference_percent = (
-    token_difference / original_word_count * 100
-    if original_word_count > 0
-    else 0
+        token_difference / original_word_count * 100
+        if original_word_count > 0
+        else 0
     )
 
     summary = pd.DataFrame(
@@ -166,23 +259,36 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
     return summary
 
 
+# ---------------------------------------------------------------------
+# Frequency and N-gram helpers
+# ---------------------------------------------------------------------
+
 def create_token_frequency_table(
     df: pd.DataFrame,
     corpus_label: str,
     min_count: int = 1,
+    stopwords: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create token frequency table from cleaned text.
+
+    If stopwords are provided, a content-token version is created.
     """
+
+    if stopwords is None:
+        stopwords = set()
 
     counter = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
+
+        if stopwords:
+            tokens = filter_content_tokens(tokens, stopwords)
+
         counter.update(tokens)
 
     records = []
-
     total_tokens = sum(counter.values())
 
     for token, count in counter.items():
@@ -222,15 +328,25 @@ def create_ngram_frequency_table(
     corpus_label: str,
     n: int,
     min_count: int = 1,
+    stopwords: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create N-gram frequency table from cleaned text.
+
+    If stopwords are provided, N-grams are built from content tokens.
     """
+
+    if stopwords is None:
+        stopwords = set()
 
     counter = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
+
+        if stopwords:
+            tokens = filter_content_tokens(tokens, stopwords)
+
         ngrams = make_ngrams(tokens, n)
         counter.update(ngrams)
 
@@ -264,7 +380,11 @@ def create_ngram_frequency_table(
 # Main corpus processing
 # ---------------------------------------------------------------------
 
-def analyze_corpus(corpus_name: str, min_count: int) -> dict[str, pd.DataFrame]:
+def analyze_corpus(
+    corpus_name: str,
+    min_count: int,
+    stopwords: set[str],
+) -> dict[str, pd.DataFrame]:
     """
     Run word count, token frequency, bigram, and trigram analyses for one corpus.
     """
@@ -290,33 +410,66 @@ def analyze_corpus(corpus_name: str, min_count: int) -> dict[str, pd.DataFrame]:
 
     word_counts = create_word_count_summary(df, config["label"])
 
-    token_frequencies = create_token_frequency_table(
+    token_frequencies_all = create_token_frequency_table(
         df,
         config["label"],
         min_count=min_count,
+        stopwords=None,
     )
 
-    bigrams = create_ngram_frequency_table(
+    token_frequencies_content = create_token_frequency_table(
+        df,
+        config["label"],
+        min_count=min_count,
+        stopwords=stopwords,
+    )
+
+    bigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
         n=2,
         min_count=min_count,
+        stopwords=None,
     )
 
-    trigrams = create_ngram_frequency_table(
+    bigrams_content = create_ngram_frequency_table(
+        df,
+        config["label"],
+        n=2,
+        min_count=min_count,
+        stopwords=stopwords,
+    )
+
+    trigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
         n=3,
         min_count=min_count,
+        stopwords=None,
+    )
+
+    trigrams_content = create_ngram_frequency_table(
+        df,
+        config["label"],
+        n=3,
+        min_count=min_count,
+        stopwords=stopwords,
     )
 
     return {
         "word_counts": word_counts,
-        "token_frequencies": token_frequencies,
-        "bigrams": bigrams,
-        "trigrams": trigrams,
+        "token_frequencies_all": token_frequencies_all,
+        "token_frequencies_content": token_frequencies_content,
+        "bigrams_all": bigrams_all,
+        "bigrams_content": bigrams_content,
+        "trigrams_all": trigrams_all,
+        "trigrams_content": trigrams_content,
     }
 
+
+# ---------------------------------------------------------------------
+# Excel export
+# ---------------------------------------------------------------------
 
 def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
     """
@@ -327,42 +480,77 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
 
     with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
         word_count_tables = []
-        token_frequency_tables = []
-        bigram_tables = []
-        trigram_tables = []
+
+        token_frequency_all_tables = []
+        token_frequency_content_tables = []
+
+        bigram_all_tables = []
+        bigram_content_tables = []
+
+        trigram_all_tables = []
+        trigram_content_tables = []
 
         for corpus_name, corpus_results in results.items():
             prefix = CORPUS_CONFIG[corpus_name]["prefix"]
 
+            # Individual corpus sheets
             corpus_results["word_counts"].to_excel(
                 writer,
                 sheet_name=f"{prefix}_word_counts",
                 index=False,
             )
 
-            corpus_results["token_frequencies"].to_excel(
+            corpus_results["token_frequencies_all"].to_excel(
                 writer,
-                sheet_name=f"{prefix}_token_freq",
+                sheet_name=f"{prefix}_token_freq_all",
                 index=False,
             )
 
-            corpus_results["bigrams"].to_excel(
+            corpus_results["token_frequencies_content"].to_excel(
                 writer,
-                sheet_name=f"{prefix}_bigrams",
+                sheet_name=f"{prefix}_token_freq_content",
                 index=False,
             )
 
-            corpus_results["trigrams"].to_excel(
+            corpus_results["bigrams_all"].to_excel(
                 writer,
-                sheet_name=f"{prefix}_trigrams",
+                sheet_name=f"{prefix}_bigrams_all",
                 index=False,
             )
 
+            corpus_results["bigrams_content"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_bigrams_content",
+                index=False,
+            )
+
+            corpus_results["trigrams_all"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_trigrams_all",
+                index=False,
+            )
+
+            corpus_results["trigrams_content"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_trigrams_content",
+                index=False,
+            )
+
+            # Collect combined tables
             word_count_tables.append(corpus_results["word_counts"])
-            token_frequency_tables.append(corpus_results["token_frequencies"])
-            bigram_tables.append(corpus_results["bigrams"])
-            trigram_tables.append(corpus_results["trigrams"])
 
+            token_frequency_all_tables.append(corpus_results["token_frequencies_all"])
+            token_frequency_content_tables.append(
+                corpus_results["token_frequencies_content"]
+            )
+
+            bigram_all_tables.append(corpus_results["bigrams_all"])
+            bigram_content_tables.append(corpus_results["bigrams_content"])
+
+            trigram_all_tables.append(corpus_results["trigrams_all"])
+            trigram_content_tables.append(corpus_results["trigrams_content"])
+
+        # Combined sheets
         if word_count_tables:
             pd.concat(word_count_tables, ignore_index=True).to_excel(
                 writer,
@@ -370,24 +558,45 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-        if token_frequency_tables:
-            pd.concat(token_frequency_tables, ignore_index=True).to_excel(
+        if token_frequency_all_tables:
+            pd.concat(token_frequency_all_tables, ignore_index=True).to_excel(
                 writer,
-                sheet_name="combined_token_freq",
+                sheet_name="combined_token_freq_all",
                 index=False,
             )
 
-        if bigram_tables:
-            pd.concat(bigram_tables, ignore_index=True).to_excel(
+        if token_frequency_content_tables:
+            pd.concat(token_frequency_content_tables, ignore_index=True).to_excel(
                 writer,
-                sheet_name="combined_bigrams",
+                sheet_name="combined_token_freq_content",
                 index=False,
             )
 
-        if trigram_tables:
-            pd.concat(trigram_tables, ignore_index=True).to_excel(
+        if bigram_all_tables:
+            pd.concat(bigram_all_tables, ignore_index=True).to_excel(
                 writer,
-                sheet_name="combined_trigrams",
+                sheet_name="combined_bigrams_all",
+                index=False,
+            )
+
+        if bigram_content_tables:
+            pd.concat(bigram_content_tables, ignore_index=True).to_excel(
+                writer,
+                sheet_name="combined_bigrams_content",
+                index=False,
+            )
+
+        if trigram_all_tables:
+            pd.concat(trigram_all_tables, ignore_index=True).to_excel(
+                writer,
+                sheet_name="combined_trigrams_all",
+                index=False,
+            )
+
+        if trigram_content_tables:
+            pd.concat(trigram_content_tables, ignore_index=True).to_excel(
+                writer,
+                sheet_name="combined_trigrams_content",
                 index=False,
             )
 
@@ -419,6 +628,8 @@ def main():
 
     args = parser.parse_args()
 
+    stopwords = load_stopwords(STOPWORDS_FILE)
+
     if args.corpus == "both":
         selected_corpora = ["direct", "group"]
     else:
@@ -430,6 +641,7 @@ def main():
         results[corpus_name] = analyze_corpus(
             corpus_name,
             min_count=args.min_count,
+            stopwords=stopwords,
         )
 
     write_results_to_excel(results)
