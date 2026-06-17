@@ -29,3 +29,7 @@ Manual validation of token and N-gram tables showed that the artefact `inname` o
 ## Manual validation: gender-inclusive colleague and user references
 
 Manual validation of token and N-gram tables showed that gender-inclusive forms such as `Kolleg:innen` and `Benutzer:innen` were split into artificial token sequences such as `Kolleg innen` and `Benutzer inname`. In the analyzed clinical communication corpus, these forms referred to colleagues or platform users within the care team. They were therefore subsumed under the standardized token `KolName` rather than retained as separate gender-inclusive surface forms. This decision reduced artificial token fragmentation while preserving the analytical category of colleague/user references.
+
+## Manual validation: gender-inclusive compounds
+
+Manual validation of token and N-gram frequency tables showed that gender-inclusive compounds were split into artificial tokens, for example `innentreffen` and `innenwechsel`. These forms had different analytical meanings and were therefore not treated uniformly. The project-related form `Nutzer:innentreffen` was standardized to `Projekt_Nutzertreffen` and excluded from the content-token view via the stopword list. The clinically relevant form `Behandler:innenwechsel` was standardized to `Behandlerwechsel` and retained for content analyses. These compound-specific rules were applied before general punctuation removal and before the normalization of colleague/user references to `KolName`.
