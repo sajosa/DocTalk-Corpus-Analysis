@@ -19,10 +19,48 @@ def _normalize_hashtag_content(hashtag: str) -> str:
     """
     Normalize the content of a hashtag while preserving it as one token.
     """
+
     hashtag = hashtag.strip()
     hashtag = hashtag.replace("-", "_")
     hashtag = re.sub(r"[^\wÄÖÜäöüß_]", "", hashtag)
+
     return hashtag
+
+
+def normalize_gender_colleague_user_references(text: str) -> str:
+    """
+    Normalize gender-inclusive colleague/user references to KolName.
+
+    In this corpus, forms such as Kolleg:innen, Benutzer:innen, Nutzer:innen
+    refer to colleagues or platform users within the clinical team.
+
+    Examples:
+    Kolleg:innen       -> KolName
+    Kolleg*innen       -> KolName
+    Kolleg innen       -> KolName
+    Benutzer:innen     -> KolName
+    Benutzer inname    -> KolName
+    Nutzer:innen       -> KolName
+    """
+
+    # Repair known artefact from split gender-inclusive user references
+    # Example: Benutzer:innen -> Benutzer inname
+    text = re.sub(
+        r"\bBenutzer\s+inname\b",
+        " KolName ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Normalize gender-inclusive colleague/user references
+    text = re.sub(
+        r"\b(Kolleg|Benutzer|Nutzer)([:*/_]\s*|\s+)?innen\b",
+        " KolName ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    return text
 
 
 def clean_text_lexical(text: str) -> str:
@@ -34,6 +72,12 @@ def clean_text_lexical(text: str) -> str:
         return ""
 
     cleaned = text
+
+    # ------------------------------------------------------------------
+    # 0. Normalize gender-inclusive colleague/user references
+    # ------------------------------------------------------------------
+
+    cleaned = normalize_gender_colleague_user_references(cleaned)
 
     # ------------------------------------------------------------------
     # 1. Standardize functional communication markers
@@ -163,6 +207,13 @@ def clean_text_lexical(text: str) -> str:
     )
 
     cleaned = re.sub(
+        r"<Name_Abkürzung>",
+        " PatName ",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
+    cleaned = re.sub(
         r"<Aussprache_Nachname>",
         " Aussprache_PatName ",
         cleaned,
@@ -248,7 +299,7 @@ def clean_text_lexical(text: str) -> str:
             flags=re.IGNORECASE,
         )
 
-   # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # 8. Harmonize ToDo expressions and preserve negations
     # ------------------------------------------------------------------
 
@@ -280,6 +331,7 @@ def clean_text_lexical(text: str) -> str:
         cleaned,
         flags=re.IGNORECASE,
     )
+
     # ------------------------------------------------------------------
     # 9. Remove non-informative salutations
     # ------------------------------------------------------------------
