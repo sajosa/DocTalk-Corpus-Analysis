@@ -33,3 +33,11 @@ Manual validation of token and N-gram tables showed that gender-inclusive forms 
 ## Manual validation: gender-inclusive compounds
 
 Manual validation of token and N-gram frequency tables showed that gender-inclusive compounds were split into artificial tokens, for example `innentreffen` and `innenwechsel`. These forms had different analytical meanings and were therefore not treated uniformly. The project-related form `Nutzer:innentreffen` was standardized to `Projekt_Nutzertreffen` and excluded from the content-token view via the stopword list. The clinically relevant form `Behandler:innenwechsel` was standardized to `Behandlerwechsel` and retained for content analyses. These compound-specific rules were applied before general punctuation removal and before the normalization of colleague/user references to `KolName`.
+
+## Manual validation: gender-inclusive forms
+
+Manual validation of token and N-gram frequency tables showed that gender-inclusive forms were split into artificial residual tokens such as `innen`. We therefore searched the original corpus for terms preceding `:innen` and `*innen` and created a corpus-specific mapping table. Patient-related terms were standardized to `Patient`, `Mitpatient`, or `Probatorik_Patient`; clinical roles to tokens such as `Therapeut`, `Arzt`, or `Behandler`; and internal colleague/team references to `KolName`. This rule-based normalization was applied before general punctuation removal and eliminated residual `innen` artefacts from the cleaned lexical corpus.
+
+## Validation status
+
+After applying the revised cleaning rules, residual `innen` artefacts no longer occurred in the cleaned lexical frequency tables.

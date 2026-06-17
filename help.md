@@ -10,9 +10,8 @@ Ersetze path/to/venv durch den gewünschten Speicherort für deine virtuelle Umg
 2. Aktiviere die virtuelle Umgebung:
 Aktiviere die virtuelle Umgebung mit dem folgenden Befehl:
 
+source .venv/bin/activate
 
-source path/to/venv/bin/activate
-Ersetze path/to/venv durch den Pfad deiner virtuellen Umgebung (z. B. ~/myenv).
 
 3. Installiere ipykernel in der virtuellen Umgebung:
 Sobald die virtuelle Umgebung aktiviert ist, kannst du den Befehl ausführen, um ipykernel zu installieren:

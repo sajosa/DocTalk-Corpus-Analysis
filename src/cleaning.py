@@ -90,175 +90,89 @@ def normalize_gender_specific_compounds(text: str) -> str:
 
 def normalize_gender_clinical_role_terms(text: str) -> str:
     """
-    Normalize gender-inclusive clinical role and patient terms.
+    Normalize gender-inclusive clinical, patient-related, and role terms.
 
-    These rules preserve clinically or organizationally meaningful
-    categories while preventing artificial token splitting.
+    The mapping is corpus-specific and based on manual validation of
+    original tokens preceding :innen or *innen.
 
     Examples:
-    Bezugstherapeut:innen       -> Bezugstherapeut
-    Therapeut*innen             -> Therapeut
-    Patient*innen               -> Patient
-    MitpatientInnen             -> Mitpatient
-    Probatorik-Patient*innen    -> Probatorik_Patient
-    Ärzt:innen                  -> Arzt
-    Ärtz:innen                  -> Arzt
+    Patient*innen              -> Patient
+    Patient*Innen              -> Patient
+    Probatorik-Patient*innen   -> Probatorik_Patient
+    MitpatientInnen            -> Mitpatient
+    Therapeut:innen            -> Therapeut
+    Ärzt:innen                 -> Arzt
+    Praktikant*innen           -> KolName
+    Freund:innen               -> Freund
     """
 
-    # Bezugstherapeut:innen / Bezugstherapeut*innen / BezugstherapeutInnen
-    text = re.sub(
-        r"\bBezugstherapeut\s*[:*/_]\s*innen\b",
-        " Bezugstherapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+    gender_role_map = {
+        # Patient-related terms
+        "patient": "Patient",
+        "pattien": "Patient",
+        "probatorik-patient": "Probatorik_Patient",
+        "probatorikpatient": "Probatorik_Patient",
+        "mitpatient": "Mitpatient",
+        "zimmernachbar": "Mitpatient",
 
-    text = re.sub(
-        r"\bBezugstherapeutInnen\b",
-        " Bezugstherapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Colleague / internal team references
+        "kolleg": "KolName",
+        "praktikant": "KolName",
+        "psychologiepraktikant": "KolName",
+        "assistent": "KolName",
+        "mitarbeiter": "KolName",
 
-    text = re.sub(
-        r"\bBezugstherapeut\s+innen\b",
-        " Bezugstherapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Clinical roles
+        "therapeut": "Therapeut",
+        "bezugstherapeut": "Bezugstherapeut",
+        "kreativtherapeut": "Kreativtherapeut",
+        "psychotherapeut": "Psychotherapeut",
+        "behandler": "Behandler",
+        "ärzt": "Arzt",
+        "arzt": "Arzt",
+        "ärtz": "Arzt",
+        "psycholog": "Psychologe",
+        "psychiater": "Psychiater",
 
-    # Therapeut:innen / Therapeut*innen / TherapeutInnen
-    text = re.sub(
-        r"\bTherapeut\s*[:*/_]\s*innen\b",
-        " Therapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Social roles
+        "freund": "Freund",
 
-    text = re.sub(
-        r"\bTherapeutInnen\b",
-        " Therapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Project / research / other roles
+        "interessent": "Interessent",
+        "wissenschaftler": "Wissenschaftler",
+        "forscher": "Forscher",
+        "deutschmuttersprachler": "Deutschmuttersprachler",
+    }
 
-    text = re.sub(
-        r"\bTherapeut\s+innen\b",
-        " Therapeut ",
-        text,
-        flags=re.IGNORECASE,
-    )
+    for base, replacement in gender_role_map.items():
+        escaped_base = re.escape(base)
 
-    # Praktikant*innen / Praktikant:innen / PraktikantInnen
-    # In this corpus, these are team/member references.
-    text = re.sub(
-        r"\bPraktikant\s*[:*/_]\s*innen\b",
-        " KolName ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Forms with colon, asterisk, slash, or underscore:
+        # Patient:innen, Patient*innen, Patient_innen, Patient/innen
+        text = re.sub(
+            rf"\b{escaped_base}\s*[:*/_]\s*[Ii]nnen\b",
+            f" {replacement} ",
+            text,
+            flags=re.IGNORECASE,
+        )
 
-    text = re.sub(
-        r"\bPraktikantInnen\b",
-        " KolName ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # Already split forms:
+        # Patient innen
+        text = re.sub(
+            rf"\b{escaped_base}\s+[Ii]nnen\b",
+            f" {replacement} ",
+            text,
+            flags=re.IGNORECASE,
+        )
 
-    text = re.sub(
-        r"\bPraktikant\s+innen\b",
-        " KolName ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    # Patient*innen / Patient:innen / PatientInnen / Patient*Innen
-    text = re.sub(
-        r"\bPatient\s*[:*/_]\s*innen\b",
-        " Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bPatientInnen\b",
-        " Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bPatient\s+innen\b",
-        " Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    # Mitpatient innen / Mitpatient:innen / Mitpatient*innen / MitpatientInnen
-    text = re.sub(
-        r"\bMitpatient\s*[:*/_]\s*innen\b",
-        " Mitpatient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bMitpatientInnen\b",
-        " Mitpatient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bMitpatient\s+innen\b",
-        " Mitpatient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    # Probatorik-Patient*innen / Probatorik Patient innen / Probatorik-PatientInnen
-    text = re.sub(
-        r"\bProbatorik[-\s]+Patient\s*[:*/_]\s*innen\b",
-        " Probatorik_Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bProbatorik[-\s]+PatientInnen\b",
-        " Probatorik_Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bProbatorik[-\s]+Patient\s+innen\b",
-        " Probatorik_Patient ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    # Ärzt:innen / Arzt:innen / Ärtz:innen / Ärzt*innen / Arzt*innen / ÄrztInnen
-    text = re.sub(
-        r"\b(Ärzt|Arzt|Ärtz)\s*[:*/_]\s*innen\b",
-        " Arzt ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\b(Ärzt|Arzt|Ärtz)\s+innen\b",
-        " Arzt ",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\bÄrztInnen\b|\bArztInnen\b|\bÄrtzInnen\b",
-        " Arzt ",
-        text,
-        flags=re.IGNORECASE,
-    )
+        # CamelCase / Binnen-I forms:
+        # PatientInnen
+        text = re.sub(
+            rf"\b{escaped_base}[Ii]nnen\b",
+            f" {replacement} ",
+            text,
+            flags=re.IGNORECASE,
+        )
 
     return text
 
