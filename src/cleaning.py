@@ -10,6 +10,11 @@ The cleaning rules are designed for lexical frequency analyses,
 N-gram analyses, and related corpus-linguistic analyses.
 
 The original corpus tables should remain unchanged.
+
+to run use: 
+python scripts/03_clean_lexical.py --corpus both
+python scripts/06_frequency_ngram_keyness.py --corpus both --min-count 3
+
 """
 
 import re
@@ -176,6 +181,55 @@ def normalize_gender_clinical_role_terms(text: str) -> str:
 
     return text
 
+def normalize_patient_role_variants(text: str) -> str:
+    """
+    Normalize ordinary patient-related lexical variants.
+
+    This function handles non-gender-marker variants that are not captured
+    by the :innen / *innen normalization rules.
+
+    Examples:
+    Patientin        -> Patient
+    Patienten        -> Patient
+    PAatientin       -> Patient
+    Mitpatienten     -> Mitpatient
+    Mitpatientin      -> Mitpatient
+    Schmerzpatienten -> Schmerzpatient
+    """
+
+    # Typo observed in the corpus
+    text = re.sub(
+        r"\bPAatient(?:in|innen|en)?\b",
+        " Patient ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Patient / Patientin / Patienten / Patientinnen
+    text = re.sub(
+        r"\bPatient(?:in|innen|en)?\b",
+        " Patient ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Mitpatient / Mitpatientin / Mitpatienten / Mitpatientinnen
+    text = re.sub(
+        r"\bMitpatient(?:in|innen|en)?\b",
+        " Mitpatient ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Schmerzpatient / Schmerzpatientin / Schmerzpatienten / Schmerzpatientinnen
+    text = re.sub(
+        r"\bSchmerzpatient(?:in|innen|en)?\b",
+        " Schmerzpatient ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    return text
 
 def normalize_gender_colleague_user_references(text: str) -> str:
     """
@@ -293,6 +347,20 @@ def clean_text_lexical(text: str) -> str:
     # ------------------------------------------------------------------
 
     cleaned = normalize_gender_colleague_user_references(cleaned)
+
+    # ------------------------------------------------------------------
+    # 0d. Harmonize common clinical abbreviations
+    # ------------------------------------------------------------------
+
+    # Pat / Pat. is used as an abbreviation for patient(s) in this corpus.
+    # It is standardized to Patient to avoid artificial token splitting
+    # between Pat and Patient.
+    cleaned = re.sub(
+        r"\bPat\.?\b",
+        " Patient ",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
 
     # ------------------------------------------------------------------
     # 1. Standardize functional communication markers

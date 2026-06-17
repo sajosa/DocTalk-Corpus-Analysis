@@ -12,11 +12,14 @@ and group-message corpora.
 This script calculates:
 - word counts before and after lexical cleaning
 - token frequencies, all tokens
-- token frequencies, content tokens after stopword filtering
+- token frequencies, content tokens after content-stopword filtering
+- token frequencies, interaction/style tokens after interaction-stopword filtering
 - bigrams, all tokens
-- bigrams, content tokens after stopword filtering
+- bigrams, content tokens
+- bigrams, interaction/style tokens
 - trigrams, all tokens
-- trigrams, content tokens after stopword filtering
+- trigrams, content tokens
+- trigrams, interaction/style tokens
 
 The script uses the cleaned corpus tables produced by:
 
@@ -34,13 +37,15 @@ Each input file must contain:
     text_original
     text_clean_lexical
 
-Stopwords
----------
-Expected stopword file:
+Rule files
+----------
+Expected rule files:
 
-    rules/stopwords_custom.txt
+    rules/stopwords_content.txt
+    rules/stopwords_interaction.txt
+    rules/protected_tokens.txt
 
-The file should contain one stopword per line.
+All files should contain one token per line.
 Empty lines and lines starting with '#' are ignored.
 
 Outputs
@@ -77,7 +82,15 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 
 INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "public" / "tables"
-STOPWORDS_FILE = PROJECT_DIR / "rules" / "stopwords_custom.txt"
+
+RULES_DIR = PROJECT_DIR / "rules"
+
+STOPWORDS_CONTENT_FILE = RULES_DIR / "stopwords_content.txt"
+STOPWORDS_INTERACTION_FILE = RULES_DIR / "stopwords_interaction.txt"
+PROTECTED_TOKENS_FILE = RULES_DIR / "protected_tokens.txt"
+
+# Fallback for older project state
+LEGACY_STOPWORDS_FILE = RULES_DIR / "stopwords_custom.txt"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -97,10 +110,10 @@ CORPUS_CONFIG = {
 
 
 # ---------------------------------------------------------------------
-# Protected analytical tokens
+# Default protected analytical tokens
 # ---------------------------------------------------------------------
 
-PROTECTED_TOKENS = {
+DEFAULT_PROTECTED_TOKENS = {
     "PatName",
     "KolName",
     "Mention_KolName",
@@ -120,43 +133,138 @@ PROTECTED_TOKENS = {
     "Station",
     "Übergabe",
     "Rückmeldung",
+    "Patient",
+    "Mitpatient",
+    "Probatorik_Patient",
+    "Therapeut",
+    "Bezugstherapeut",
+    "Kreativtherapeut",
+    "Psychotherapeut",
+    "Behandler",
+    "Behandlerwechsel",
+    "Arzt",
+    "Psychologe",
+    "Psychiater",
+    "Freund",
 }
 
 
 # ---------------------------------------------------------------------
-# Tokenization and stopword helpers
+# Rule loading helpers
 # ---------------------------------------------------------------------
 
-def load_stopwords(stopwords_file: Path) -> set[str]:
+def load_token_list(token_file: Path, label: str) -> set[str]:
     """
-    Load custom stopwords from a text file.
+    Load a token list from a text file.
 
-    One stopword per line. Empty lines and lines starting with '#'
+    One token per line. Empty lines and lines starting with '#'
     are ignored.
     """
 
-    if not stopwords_file.exists():
-        print(f"Warning: Stopwords file not found: {stopwords_file}")
+    if not token_file.exists():
+        print(f"Warning: {label} file not found: {token_file}")
         return set()
 
-    stopwords = set()
+    tokens = set()
 
-    with open(stopwords_file, "r", encoding="utf-8") as file:
+    with open(token_file, "r", encoding="utf-8") as file:
         for line in file:
-            word = line.strip()
+            token = line.strip()
 
-            if not word:
+            if not token:
                 continue
 
-            if word.startswith("#"):
+            if token.startswith("#"):
                 continue
 
-            stopwords.add(word.lower())
+            tokens.add(token)
 
-    print(f"Loaded {len(stopwords)} stopwords from: {stopwords_file}")
+    print(f"Loaded {len(tokens)} entries from {label}: {token_file}")
 
-    return stopwords
+    return tokens
 
+
+def load_stopwords(stopwords_file: Path, label: str) -> set[str]:
+    """
+    Load stopwords and normalize them to lowercase for case-insensitive
+    stopword filtering.
+    """
+
+    stopwords = load_token_list(stopwords_file, label)
+    return {word.lower() for word in stopwords}
+
+
+def load_protected_tokens(protected_tokens_file: Path) -> set[str]:
+    """
+    Load protected analytical tokens.
+
+    If no protected token file exists, use the default protected token set.
+    """
+
+    protected_tokens = load_token_list(
+        protected_tokens_file,
+        label="protected tokens",
+    )
+
+    if not protected_tokens:
+        protected_tokens = DEFAULT_PROTECTED_TOKENS
+        print(
+            "Using default protected tokens because no protected token file "
+            "was found or the file was empty."
+        )
+
+    return protected_tokens
+
+
+def load_rule_sets() -> tuple[set[str], set[str], set[str]]:
+    """
+    Load content stopwords, interaction stopwords, and protected tokens.
+
+    If the new content/interaction stopword files do not exist yet,
+    the script falls back to rules/stopwords_custom.txt for both views.
+    This keeps the script compatible with the previous project state.
+    """
+
+    protected_tokens = load_protected_tokens(PROTECTED_TOKENS_FILE)
+
+    if STOPWORDS_CONTENT_FILE.exists():
+        stopwords_content = load_stopwords(
+            STOPWORDS_CONTENT_FILE,
+            label="content stopwords",
+        )
+    else:
+        print(
+            f"Warning: content stopword file not found: "
+            f"{STOPWORDS_CONTENT_FILE}"
+        )
+        print(f"Trying fallback file: {LEGACY_STOPWORDS_FILE}")
+        stopwords_content = load_stopwords(
+            LEGACY_STOPWORDS_FILE,
+            label="legacy/content stopwords",
+        )
+
+    if STOPWORDS_INTERACTION_FILE.exists():
+        stopwords_interaction = load_stopwords(
+            STOPWORDS_INTERACTION_FILE,
+            label="interaction stopwords",
+        )
+    else:
+        print(
+            f"Warning: interaction stopword file not found: "
+            f"{STOPWORDS_INTERACTION_FILE}"
+        )
+        print(f"Trying fallback file: {LEGACY_STOPWORDS_FILE}")
+        stopwords_interaction = load_stopwords(
+            LEGACY_STOPWORDS_FILE,
+            label="legacy/interaction stopwords",
+        )
+
+    return stopwords_content, stopwords_interaction, protected_tokens
+
+
+# ---------------------------------------------------------------------
+# Tokenization and filtering helpers
+# ---------------------------------------------------------------------
 
 def simple_tokenize(text: str) -> list[str]:
     """
@@ -178,23 +286,31 @@ def simple_tokenize(text: str) -> list[str]:
     return text.split()
 
 
-def filter_content_tokens(tokens: list[str], stopwords: set[str]) -> list[str]:
+def filter_tokens(
+    tokens: list[str],
+    stopwords: set[str],
+    protected_tokens: set[str],
+) -> list[str]:
     """
     Remove stopwords from a token list while preserving standardized
-    analytical tokens such as PatName, KolName, Todo, and kein_Todo.
+    analytical tokens.
+
+    Stopword matching is case-insensitive.
+    Protected-token matching is case-sensitive to preserve standardized
+    analytical markers exactly as generated by the cleaning script.
     """
 
-    content_tokens = []
+    filtered_tokens = []
 
     for token in tokens:
-        if token in PROTECTED_TOKENS:
-            content_tokens.append(token)
+        if token in protected_tokens:
+            filtered_tokens.append(token)
             continue
 
         if token.lower() not in stopwords:
-            content_tokens.append(token)
+            filtered_tokens.append(token)
 
-    return content_tokens
+    return filtered_tokens
 
 
 def count_words_in_series(text_series: pd.Series) -> int:
@@ -266,25 +382,33 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
 def create_token_frequency_table(
     df: pd.DataFrame,
     corpus_label: str,
+    view: str,
     min_count: int = 1,
     stopwords: set[str] | None = None,
+    protected_tokens: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create token frequency table from cleaned text.
 
-    If stopwords are provided, a content-token version is created.
+    view can be:
+    - all
+    - content
+    - interaction
     """
 
     if stopwords is None:
         stopwords = set()
+
+    if protected_tokens is None:
+        protected_tokens = set()
 
     counter = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
 
-        if stopwords:
-            tokens = filter_content_tokens(tokens, stopwords)
+        if view != "all":
+            tokens = filter_tokens(tokens, stopwords, protected_tokens)
 
         counter.update(tokens)
 
@@ -296,11 +420,13 @@ def create_token_frequency_table(
             records.append(
                 {
                     "corpus": corpus_label,
+                    "view": view,
                     "token": token,
                     "count": count,
                     "relative_frequency_per_1000_tokens": (
                         count / total_tokens * 1000 if total_tokens > 0 else 0
                     ),
+                    "total_tokens_in_view": total_tokens,
                 }
             )
 
@@ -326,26 +452,34 @@ def make_ngrams(tokens: list[str], n: int) -> list[tuple[str, ...]]:
 def create_ngram_frequency_table(
     df: pd.DataFrame,
     corpus_label: str,
+    view: str,
     n: int,
     min_count: int = 1,
     stopwords: set[str] | None = None,
+    protected_tokens: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create N-gram frequency table from cleaned text.
 
-    If stopwords are provided, N-grams are built from content tokens.
+    view can be:
+    - all
+    - content
+    - interaction
     """
 
     if stopwords is None:
         stopwords = set()
+
+    if protected_tokens is None:
+        protected_tokens = set()
 
     counter = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
 
-        if stopwords:
-            tokens = filter_content_tokens(tokens, stopwords)
+        if view != "all":
+            tokens = filter_tokens(tokens, stopwords, protected_tokens)
 
         ngrams = make_ngrams(tokens, n)
         counter.update(ngrams)
@@ -356,15 +490,18 @@ def create_ngram_frequency_table(
     for ngram_tuple, count in counter.items():
         if count >= min_count:
             ngram = " ".join(ngram_tuple)
+
             records.append(
                 {
                     "corpus": corpus_label,
+                    "view": view,
                     "n": n,
                     "ngram": ngram,
                     "count": count,
                     "relative_frequency_per_1000_ngrams": (
                         count / total_ngrams * 1000 if total_ngrams > 0 else 0
                     ),
+                    "total_ngrams_in_view": total_ngrams,
                 }
             )
 
@@ -383,7 +520,9 @@ def create_ngram_frequency_table(
 def analyze_corpus(
     corpus_name: str,
     min_count: int,
-    stopwords: set[str],
+    stopwords_content: set[str],
+    stopwords_interaction: set[str],
+    protected_tokens: set[str],
 ) -> dict[str, pd.DataFrame]:
     """
     Run word count, token frequency, bigram, and trigram analyses for one corpus.
@@ -391,7 +530,7 @@ def analyze_corpus(
 
     config = CORPUS_CONFIG[corpus_name]
 
-    print(f"Analyzing corpus: {corpus_name}")
+    print(f"\nAnalyzing corpus: {corpus_name}")
     print(f"Input file: {config['input_file']}")
 
     if not config["input_file"].exists():
@@ -413,57 +552,101 @@ def analyze_corpus(
     token_frequencies_all = create_token_frequency_table(
         df,
         config["label"],
+        view="all",
         min_count=min_count,
         stopwords=None,
+        protected_tokens=protected_tokens,
     )
 
     token_frequencies_content = create_token_frequency_table(
         df,
         config["label"],
+        view="content",
         min_count=min_count,
-        stopwords=stopwords,
+        stopwords=stopwords_content,
+        protected_tokens=protected_tokens,
+    )
+
+    token_frequencies_interaction = create_token_frequency_table(
+        df,
+        config["label"],
+        view="interaction",
+        min_count=min_count,
+        stopwords=stopwords_interaction,
+        protected_tokens=protected_tokens,
     )
 
     bigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
+        view="all",
         n=2,
         min_count=min_count,
         stopwords=None,
+        protected_tokens=protected_tokens,
     )
 
     bigrams_content = create_ngram_frequency_table(
         df,
         config["label"],
+        view="content",
         n=2,
         min_count=min_count,
-        stopwords=stopwords,
+        stopwords=stopwords_content,
+        protected_tokens=protected_tokens,
+    )
+
+    bigrams_interaction = create_ngram_frequency_table(
+        df,
+        config["label"],
+        view="interaction",
+        n=2,
+        min_count=min_count,
+        stopwords=stopwords_interaction,
+        protected_tokens=protected_tokens,
     )
 
     trigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
+        view="all",
         n=3,
         min_count=min_count,
         stopwords=None,
+        protected_tokens=protected_tokens,
     )
 
     trigrams_content = create_ngram_frequency_table(
         df,
         config["label"],
+        view="content",
         n=3,
         min_count=min_count,
-        stopwords=stopwords,
+        stopwords=stopwords_content,
+        protected_tokens=protected_tokens,
+    )
+
+    trigrams_interaction = create_ngram_frequency_table(
+        df,
+        config["label"],
+        view="interaction",
+        n=3,
+        min_count=min_count,
+        stopwords=stopwords_interaction,
+        protected_tokens=protected_tokens,
     )
 
     return {
         "word_counts": word_counts,
         "token_frequencies_all": token_frequencies_all,
         "token_frequencies_content": token_frequencies_content,
+        "token_frequencies_interaction": token_frequencies_interaction,
         "bigrams_all": bigrams_all,
         "bigrams_content": bigrams_content,
+        "bigrams_interaction": bigrams_interaction,
         "trigrams_all": trigrams_all,
         "trigrams_content": trigrams_content,
+        "trigrams_interaction": trigrams_interaction,
     }
 
 
@@ -483,12 +666,15 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
 
         token_frequency_all_tables = []
         token_frequency_content_tables = []
+        token_frequency_interaction_tables = []
 
         bigram_all_tables = []
         bigram_content_tables = []
+        bigram_interaction_tables = []
 
         trigram_all_tables = []
         trigram_content_tables = []
+        trigram_interaction_tables = []
 
         for corpus_name, corpus_results in results.items():
             prefix = CORPUS_CONFIG[corpus_name]["prefix"]
@@ -512,6 +698,12 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
+            corpus_results["token_frequencies_interaction"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_token_freq_interaction",
+                index=False,
+            )
+
             corpus_results["bigrams_all"].to_excel(
                 writer,
                 sheet_name=f"{prefix}_bigrams_all",
@@ -521,6 +713,12 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
             corpus_results["bigrams_content"].to_excel(
                 writer,
                 sheet_name=f"{prefix}_bigrams_content",
+                index=False,
+            )
+
+            corpus_results["bigrams_interaction"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_bigrams_interaction",
                 index=False,
             )
 
@@ -536,19 +734,34 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
+            corpus_results["trigrams_interaction"].to_excel(
+                writer,
+                sheet_name=f"{prefix}_trigrams_interaction",
+                index=False,
+            )
+
             # Collect combined tables
             word_count_tables.append(corpus_results["word_counts"])
 
-            token_frequency_all_tables.append(corpus_results["token_frequencies_all"])
+            token_frequency_all_tables.append(
+                corpus_results["token_frequencies_all"]
+            )
             token_frequency_content_tables.append(
                 corpus_results["token_frequencies_content"]
+            )
+            token_frequency_interaction_tables.append(
+                corpus_results["token_frequencies_interaction"]
             )
 
             bigram_all_tables.append(corpus_results["bigrams_all"])
             bigram_content_tables.append(corpus_results["bigrams_content"])
+            bigram_interaction_tables.append(corpus_results["bigrams_interaction"])
 
             trigram_all_tables.append(corpus_results["trigrams_all"])
             trigram_content_tables.append(corpus_results["trigrams_content"])
+            trigram_interaction_tables.append(
+                corpus_results["trigrams_interaction"]
+            )
 
         # Combined sheets
         if word_count_tables:
@@ -572,6 +785,16 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
+        if token_frequency_interaction_tables:
+            pd.concat(
+                token_frequency_interaction_tables,
+                ignore_index=True,
+            ).to_excel(
+                writer,
+                sheet_name="combined_token_freq_interaction",
+                index=False,
+            )
+
         if bigram_all_tables:
             pd.concat(bigram_all_tables, ignore_index=True).to_excel(
                 writer,
@@ -583,6 +806,13 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
             pd.concat(bigram_content_tables, ignore_index=True).to_excel(
                 writer,
                 sheet_name="combined_bigrams_content",
+                index=False,
+            )
+
+        if bigram_interaction_tables:
+            pd.concat(bigram_interaction_tables, ignore_index=True).to_excel(
+                writer,
+                sheet_name="combined_bigrams_interaction",
                 index=False,
             )
 
@@ -600,16 +830,26 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-    print(f"Saved results to: {output_file}")
+        if trigram_interaction_tables:
+            pd.concat(trigram_interaction_tables, ignore_index=True).to_excel(
+                writer,
+                sheet_name="combined_trigrams_interaction",
+                index=False,
+            )
+
+    print(f"\nSaved results to: {output_file}")
 
 
 # ---------------------------------------------------------------------
 # Command-line interface
 # ---------------------------------------------------------------------
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate word count, token frequency, and N-gram tables."
+        description=(
+            "Generate word count, token frequency, and N-gram tables "
+            "for all-token, content, and interaction/style views."
+        )
     )
 
     parser.add_argument(
@@ -628,7 +868,11 @@ def main():
 
     args = parser.parse_args()
 
-    stopwords = load_stopwords(STOPWORDS_FILE)
+    (
+        stopwords_content,
+        stopwords_interaction,
+        protected_tokens,
+    ) = load_rule_sets()
 
     if args.corpus == "both":
         selected_corpora = ["direct", "group"]
@@ -641,7 +885,9 @@ def main():
         results[corpus_name] = analyze_corpus(
             corpus_name,
             min_count=args.min_count,
-            stopwords=stopwords,
+            stopwords_content=stopwords_content,
+            stopwords_interaction=stopwords_interaction,
+            protected_tokens=protected_tokens,
         )
 
     write_results_to_excel(results)
