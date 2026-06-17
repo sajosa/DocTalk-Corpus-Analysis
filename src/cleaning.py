@@ -339,8 +339,9 @@ def clean_text_lexical(text: str) -> str:
     # ------------------------------------------------------------------
     # 0b. Normalize gender-inclusive clinical role and patient terms
     # ------------------------------------------------------------------
-
+    
     cleaned = normalize_gender_clinical_role_terms(cleaned)
+    cleaned = normalize_patient_role_variants(cleaned)
 
     # ------------------------------------------------------------------
     # 0c. Normalize gender-inclusive colleague/user references
@@ -360,6 +361,34 @@ def clean_text_lexical(text: str) -> str:
         " Patient ",
         cleaned,
         flags=re.IGNORECASE,
+    )
+
+    # ------------------------------------------------------------------
+    # 0e. Normalize URL remnants
+    # ------------------------------------------------------------------
+
+    cleaned = re.sub(
+        r"\bhttps?://\S+",
+        " Link ",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
+    cleaned = re.sub(
+        r"\bwww\.\S+",
+        " Link ",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
+    # ------------------------------------------------------------------
+    # 10b. Preserve question marks as interaction markers
+    # ------------------------------------------------------------------
+
+    cleaned = re.sub(
+        r"\?+",
+        " QuestionMark ",
+        cleaned,
     )
 
     # ------------------------------------------------------------------
@@ -655,7 +684,8 @@ def clean_text_lexical(text: str) -> str:
     # 11. Remove residual punctuation and technical symbols
     # ------------------------------------------------------------------
 
-    cleaned = re.sub(r"[<>@#,:;\*\(\)\.\"'„“‚‘’`´]", " ", cleaned)
+    cleaned = re.sub(r"[<>@#,:;\*\(\)\.\"'„“‚‘’`´\!]", " ", cleaned)
+    #cleaned = re.sub(r"[<>@#,:;\*\(\)\.\"'„“‚‘’`´]", " ", cleaned)
 
     # Hyphens are removed only after meaningful compounds have been handled
     cleaned = cleaned.replace("-", " ")
