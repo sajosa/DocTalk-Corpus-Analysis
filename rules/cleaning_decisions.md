@@ -46,3 +46,7 @@ After applying the revised cleaning rules, residual `innen` artefacts no longer 
 ## Patient-name sequences
 
 Repeated patient-name markers such as `PatName PatName` were manually checked and were not treated as artefacts. In the original corpus, these sequences represented genuine enumerations of multiple patients, for example in the context of group participation or group-related coordination. Therefore, repeated `PatName` sequences were retained in the cleaned lexical corpus and in N-gram analyses.
+
+## Patient-name sequences
+
+Repeated patient-name markers such as `PatName PatName` were manually checked and were not treated as artefacts. In the original corpus, these sequences represented genuine enumerations of multiple patients, for example in the context of group participation or group-related coordination. Therefore, repeated `PatName` sequences were retained in the cleaned lexical corpus and in N-gram analyses.

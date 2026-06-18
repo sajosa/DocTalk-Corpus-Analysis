@@ -78,6 +78,7 @@ Optional:
 """
 
 import argparse
+import math
 from collections import Counter
 from pathlib import Path
 
@@ -93,6 +94,7 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "public" / "tables"
 
+
 RULES_DIR = PROJECT_DIR / "rules"
 
 STOPWORDS_CONTENT_FILE = RULES_DIR / "stopwords_content.txt"
@@ -103,7 +105,7 @@ PROTECTED_TOKENS_FILE = RULES_DIR / "protected_tokens.txt"
 LEGACY_STOPWORDS_FILE = RULES_DIR / "stopwords_custom.txt"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
+KEYNESS_OUTPUT_FILE = OUTPUT_DIR / "keyness_direct_vs_group.xlsx"
 
 CORPUS_CONFIG = {
     "direct": {
@@ -567,6 +569,293 @@ def create_ngram_frequency_table(
 
 
 # ---------------------------------------------------------------------
+# Keyness helpers
+# ---------------------------------------------------------------------
+
+def _get_total_from_frequency_table(df: pd.DataFrame) -> int:
+    """
+    Extract the total number of tokens or N-grams in the analytical view.
+    """
+
+    if df.empty:
+        return 0
+
+    if "total_tokens_in_view" in df.columns:
+        return int(df["total_tokens_in_view"].dropna().iloc[0])
+
+    if "total_ngrams_in_view" in df.columns:
+        return int(df["total_ngrams_in_view"].dropna().iloc[0])
+
+    raise ValueError(
+        "Frequency table must contain either 'total_tokens_in_view' "
+        "or 'total_ngrams_in_view'."
+    )
+
+
+def _safe_log2(value: float) -> float:
+    """
+    Compute log2 safely.
+    """
+
+    if value <= 0:
+        return 0.0
+
+    return math.log2(value)
+
+
+def compute_keyness_table(
+    direct_df: pd.DataFrame,
+    group_df: pd.DataFrame,
+    item_column: str,
+    item_type: str,
+    view: str,
+    min_total_count: int = 3,
+    smoothing: float = 0.5,
+) -> pd.DataFrame:
+    """
+    Compute Direct-vs-Group keyness for tokens or N-grams.
+
+    Metrics:
+    - relative frequencies per 1000
+    - absolute difference per 1000
+    - smoothed log ratio
+    - smoothed odds ratio
+    - log-likelihood
+
+    Positive log_ratio / signed_log_likelihood indicates higher relative
+    frequency in direct messages. Negative values indicate higher relative
+    frequency in group messages.
+    """
+
+    if direct_df.empty and group_df.empty:
+        return pd.DataFrame()
+
+    direct_total = _get_total_from_frequency_table(direct_df)
+    group_total = _get_total_from_frequency_table(group_df)
+
+    direct_counts = (
+        direct_df.set_index(item_column)["count"].to_dict()
+        if not direct_df.empty
+        else {}
+    )
+
+    group_counts = (
+        group_df.set_index(item_column)["count"].to_dict()
+        if not group_df.empty
+        else {}
+    )
+
+    all_items = sorted(set(direct_counts.keys()) | set(group_counts.keys()))
+
+    records = []
+
+    for item in all_items:
+        direct_count = int(direct_counts.get(item, 0))
+        group_count = int(group_counts.get(item, 0))
+        total_count = direct_count + group_count
+
+        if total_count < min_total_count:
+            continue
+
+        direct_freq_per_1000 = (
+            direct_count / direct_total * 1000
+            if direct_total > 0
+            else 0
+        )
+
+        group_freq_per_1000 = (
+            group_count / group_total * 1000
+            if group_total > 0
+            else 0
+        )
+
+        difference_per_1000 = direct_freq_per_1000 - group_freq_per_1000
+
+        # Smoothed relative frequencies
+        direct_prop_smoothed = (
+            (direct_count + smoothing) / (direct_total + smoothing)
+            if direct_total > 0
+            else 0
+        )
+
+        group_prop_smoothed = (
+            (group_count + smoothing) / (group_total + smoothing)
+            if group_total > 0
+            else 0
+        )
+
+        log_ratio = _safe_log2(direct_prop_smoothed / group_prop_smoothed)
+
+        # Smoothed odds ratio
+        direct_non_count = max(direct_total - direct_count, 0)
+        group_non_count = max(group_total - group_count, 0)
+
+        direct_odds = (direct_count + smoothing) / (direct_non_count + smoothing)
+        group_odds = (group_count + smoothing) / (group_non_count + smoothing)
+
+        odds_ratio_smoothed = direct_odds / group_odds if group_odds > 0 else 0
+
+        # Log-likelihood G2
+        observed_total = direct_count + group_count
+        corpus_total = direct_total + group_total
+
+        expected_direct = (
+            direct_total * observed_total / corpus_total
+            if corpus_total > 0
+            else 0
+        )
+
+        expected_group = (
+            group_total * observed_total / corpus_total
+            if corpus_total > 0
+            else 0
+        )
+
+        log_likelihood = 0.0
+
+        if direct_count > 0 and expected_direct > 0:
+            log_likelihood += direct_count * math.log(direct_count / expected_direct)
+
+        if group_count > 0 and expected_group > 0:
+            log_likelihood += group_count * math.log(group_count / expected_group)
+
+        log_likelihood *= 2
+
+        if difference_per_1000 > 0:
+            direction = "direct"
+            signed_log_likelihood = log_likelihood
+        elif difference_per_1000 < 0:
+            direction = "group"
+            signed_log_likelihood = -log_likelihood
+        else:
+            direction = "balanced"
+            signed_log_likelihood = 0.0
+
+        records.append(
+            {
+                "view": view,
+                "item_type": item_type,
+                item_column: item,
+                "direction": direction,
+                "direct_count": direct_count,
+                "group_count": group_count,
+                "total_count": total_count,
+                "direct_total": direct_total,
+                "group_total": group_total,
+                "direct_freq_per_1000": direct_freq_per_1000,
+                "group_freq_per_1000": group_freq_per_1000,
+                "difference_per_1000_direct_minus_group": difference_per_1000,
+                "log_ratio_direct_vs_group": log_ratio,
+                "abs_log_ratio": abs(log_ratio),
+                "odds_ratio_smoothed": odds_ratio_smoothed,
+                "log_likelihood": log_likelihood,
+                "signed_log_likelihood": signed_log_likelihood,
+            }
+        )
+
+    result = pd.DataFrame(records)
+
+    if len(result) > 0:
+        result = result.sort_values(
+            ["log_likelihood", "abs_log_ratio", "total_count"],
+            ascending=[False, False, False],
+        )
+
+    return result
+
+
+def create_keyness_results(
+    results: dict[str, dict[str, pd.DataFrame]],
+    min_total_count: int = 3,
+) -> dict[str, pd.DataFrame]:
+    """
+    Create Direct-vs-Group keyness tables for selected analytical views.
+
+    Keyness is computed for:
+    - content tokens
+    - interaction tokens
+    - content bigrams
+    - interaction bigrams
+    - content trigrams
+    - interaction trigrams
+    """
+
+    if "direct" not in results or "group" not in results:
+        print(
+            "Skipping keyness analysis because both direct and group "
+            "corpora are required."
+        )
+        return {}
+
+    direct_results = results["direct"]
+    group_results = results["group"]
+
+    specs = [
+        {
+            "name": "key_content_tokens",
+            "direct_key": "token_frequencies_content",
+            "group_key": "token_frequencies_content",
+            "item_column": "token",
+            "item_type": "token",
+            "view": "content",
+        },
+        {
+            "name": "key_interaction_tokens",
+            "direct_key": "token_frequencies_interaction",
+            "group_key": "token_frequencies_interaction",
+            "item_column": "token",
+            "item_type": "token",
+            "view": "interaction",
+        },
+        {
+            "name": "key_content_bigrams",
+            "direct_key": "bigrams_content",
+            "group_key": "bigrams_content",
+            "item_column": "ngram",
+            "item_type": "bigram",
+            "view": "content",
+        },
+        {
+            "name": "key_interaction_bigrams",
+            "direct_key": "bigrams_interaction",
+            "group_key": "bigrams_interaction",
+            "item_column": "ngram",
+            "item_type": "bigram",
+            "view": "interaction",
+        },
+        {
+            "name": "key_content_trigrams",
+            "direct_key": "trigrams_content",
+            "group_key": "trigrams_content",
+            "item_column": "ngram",
+            "item_type": "trigram",
+            "view": "content",
+        },
+        {
+            "name": "key_interaction_trigrams",
+            "direct_key": "trigrams_interaction",
+            "group_key": "trigrams_interaction",
+            "item_column": "ngram",
+            "item_type": "trigram",
+            "view": "interaction",
+        },
+    ]
+
+    keyness_results = {}
+
+    for spec in specs:
+        keyness_results[spec["name"]] = compute_keyness_table(
+            direct_df=direct_results[spec["direct_key"]],
+            group_df=group_results[spec["group_key"]],
+            item_column=spec["item_column"],
+            item_type=spec["item_type"],
+            view=spec["view"],
+            min_total_count=min_total_count,
+        )
+
+    return keyness_results
+
+# ---------------------------------------------------------------------
 # Main corpus processing
 # ---------------------------------------------------------------------
 
@@ -892,6 +1181,34 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
 
     print(f"\nSaved results to: {output_file}")
 
+def write_keyness_to_excel(keyness_results: dict[str, pd.DataFrame]) -> None:
+    """
+    Write Direct-vs-Group keyness results to a separate Excel workbook.
+    """
+
+    if not keyness_results:
+        print("No keyness results to write.")
+        return
+
+    with pd.ExcelWriter(KEYNESS_OUTPUT_FILE, engine="openpyxl") as writer:
+        for sheet_name, df in keyness_results.items():
+            if df.empty:
+                pd.DataFrame(
+                    [{"message": "No results available for this table."}]
+                ).to_excel(
+                    writer,
+                    sheet_name=sheet_name[:31],
+                    index=False,
+                )
+            else:
+                df.to_excel(
+                    writer,
+                    sheet_name=sheet_name[:31],
+                    index=False,
+                )
+
+    print(f"Saved keyness results to: {KEYNESS_OUTPUT_FILE}")
+
 
 # ---------------------------------------------------------------------
 # Command-line interface
@@ -944,6 +1261,18 @@ def main() -> None:
         )
 
     write_results_to_excel(results)
+
+    if args.corpus == "both":
+        keyness_results = create_keyness_results(
+            results,
+            min_total_count=args.min_count,
+        )
+        write_keyness_to_excel(keyness_results)
+    else:
+        print(
+            "Skipping keyness output because --corpus both is required "
+            "for Direct-vs-Group comparison."
+        )
 
 
 if __name__ == "__main__":
