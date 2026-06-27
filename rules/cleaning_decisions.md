@@ -16,6 +16,7 @@ Rule order was adjusted accordingly:
 ## Manual validation: negated ToDo possessive variants
 
 Manual validation showed that variants such as `kein_Todo 's` occurred after initial ToDo normalization. These forms were standardized to `kein_Todo` to avoid artificial token fragmentation in lexical frequency and N-gram analyses.
+During validation, one hashtag-based no-task variant (#kein to do) was identified and normalized to kein_Todo in the v2 analysis-specific cleaning step.
 
 ## Manual validation: quotation marks and apostrophe remnants
 

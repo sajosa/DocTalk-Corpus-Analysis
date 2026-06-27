@@ -8,7 +8,18 @@ v2 changes:
    KT Gruppe -> KT_Gruppe
    GT Gruppe -> GT_Gruppe
 
-2. Create a content_text_v2 column with selected high-frequency German
+2. Normalize explicit no-task status expressions:
+   kein aktives Todo -> kein_Todo
+   kein aktuelles Todo -> kein_Todo
+   kein_aktives_Todo -> kein_Todo
+
+3. Normalize selected sentence-initial pronouns/function words:
+   Ich -> ich
+   Du -> du
+   Mir -> mir
+   etc.
+
+4. Create a content_text_v2 column with selected high-frequency German
    function words removed for content-oriented collocation analysis.
 
 Inputs:
@@ -43,30 +54,70 @@ MARKER_OUT = PROJECT_DIR / "outputs/results/collocations_v2/marker_presence_chec
 
 TEXT_COL = "text_clean_lexical"
 
+
+# -----------------------------------------------------------------------------
+# Rule-based v2 normalization
+# -----------------------------------------------------------------------------
+
 THERAPY_GROUP_RULES = [
     (r"\bMT\s+Gruppe\b", "MT_Gruppe"),
     (r"\bKT\s+Gruppe\b", "KT_Gruppe"),
     (r"\bGT\s+Gruppe\b", "GT_Gruppe"),
 ]
 
+TODO_STATUS_RULES = [
+    # Hashtag artefact variants, e.g. original "#kein to do"
+    (r"\bHashtag_kein\s+Todo\b", "kein_Todo"),
+    (r"\bHashtag_keine\s+Todo\b", "kein_Todo"),
+
+    # Underscore variants
+    (r"\bkein_aktives_Todo\b", "kein_Todo"),
+    (r"\bkein_aktives_ToDo\b", "kein_Todo"),
+    (r"\bkein_aktuelles_Todo\b", "kein_Todo"),
+    (r"\bkein_aktuelles_ToDo\b", "kein_Todo"),
+
+    # Whitespace variants
+    (r"\bkein\s+aktives\s+Todo\b", "kein_Todo"),
+    (r"\bkein\s+aktives\s+ToDo\b", "kein_Todo"),
+    (r"\bkein\s+aktuelles\s+Todo\b", "kein_Todo"),
+    (r"\bkein\s+aktuelles\s+ToDo\b", "kein_Todo"),
+]
+
+CASE_NORMALIZATION_RULES = [
+    # Selected sentence-initial pronouns/function words.
+    # Do not lowercase the full text because protected markers must remain stable.
+    (r"\bIch\b", "ich"),
+    (r"\bDu\b", "du"),
+    (r"\bMir\b", "mir"),
+    (r"\bMich\b", "mich"),
+    (r"\bDir\b", "dir"),
+    (r"\bDich\b", "dich"),
+    (r"\bWir\b", "wir"),
+    (r"\bUns\b", "uns"),
+    (r"\bSich\b", "sich"),
+]
+
+
 # Conservative German/function-word stoplist for content-oriented collocation.
-# Important interaction words such as ich/du/mir/bitte/danke/hallo/liebe are NOT removed here
-# if you still want to inspect addressivity later.
+# Interactionally relevant words such as ich/du/mir are removed from content_text_v2,
+# but preserved in interaction_text_v2.
 CONTENT_STOPWORDS = {
     "der", "die", "das",
     "den", "dem", "des",
     "ein", "eine", "einer", "einem", "einen", "eines",
     "und", "oder", "aber",
-    "in", "im", "im", "am", "an", "auf", "aus", "bei", "mit", "nach", "von", "vor", "zu", "zur", "zum",
+    "in", "im", "am", "an", "auf", "aus", "bei", "mit", "nach", "von", "vor", "zu", "zur", "zum",
     "für", "über", "unter", "zwischen",
     "ist", "sind", "war", "waren", "wird", "werden", "wurde", "wurden",
     "hat", "haben", "hatte", "hatten",
     "sein", "gewesen",
     "es", "er", "sie", "wir", "ihr",
+    "ich", "du", "mir", "mich", "dir", "dich", "uns", "sich",
     "da", "dann", "noch", "auch", "schon", "nur", "so", "mal",
     "wie", "was", "wer", "wo", "wann",
     "dass", "wenn", "weil", "als",
 }
+
 
 MARKERS_TO_CHECK = [
     "PatName",
@@ -77,6 +128,7 @@ MARKERS_TO_CHECK = [
     "WE",
     "Todo",
     "kein_Todo",
+    "kein_aktives_Todo",
     "kein",
     "Rückmeldung",
     "Gruppe",
@@ -98,9 +150,36 @@ def safe_text(x):
 
 
 def normalize_therapy_groups(text: str) -> str:
+    """
+    Normalize recurrent therapy group multiword expressions.
+    """
     text = safe_text(text)
     for pattern, replacement in THERAPY_GROUP_RULES:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+def normalize_todo_status(text: str) -> str:
+    """
+    Normalize explicit no-task status expressions.
+
+    These variants all express absence of an active/pending task and are
+    therefore mapped to the established marker kein_Todo.
+    """
+    text = safe_text(text)
+    for pattern, replacement in TODO_STATUS_RULES:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+def normalize_case_selected(text: str) -> str:
+    """
+    Normalize selected sentence-initial function words/pronouns without lowercasing
+    protected markers such as PatName, KolName, WE, ÖGD, MT_Gruppe.
+    """
+    text = safe_text(text)
+    for pattern, replacement in CASE_NORMALIZATION_RULES:
+        text = re.sub(pattern, replacement, text)
     return text
 
 
@@ -132,12 +211,18 @@ def add_v2_columns(df: pd.DataFrame, direction: str) -> pd.DataFrame:
     if TEXT_COL not in df.columns:
         raise ValueError(f"Required column not found: {TEXT_COL}. Available columns: {df.columns.tolist()}")
 
-    df["text_clean_lexical_v2"] = df[TEXT_COL].apply(normalize_therapy_groups)
+    df["text_clean_lexical_v2"] = (
+        df[TEXT_COL]
+        .apply(normalize_therapy_groups)
+        .apply(normalize_todo_status)
+        .apply(normalize_case_selected)
+    )
 
-    # Content view: MWE normalization + stopword removal.
+    # Content view: MWE normalization + no-task normalization + selected case normalization
+    # + stopword removal.
     df["content_text_v2"] = df["text_clean_lexical_v2"].apply(remove_content_stopwords)
 
-    # Interaction view for now: MWE normalization only.
+    # Interaction view for now: v2 normalization only, without content stopword removal.
     # This preserves interactionally relevant words such as ich, du, bitte, danke, hallo, liebe.
     df["interaction_text_v2"] = df["text_clean_lexical_v2"]
 
