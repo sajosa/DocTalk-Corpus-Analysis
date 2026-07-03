@@ -3,10 +3,10 @@
 Sort review_top_collocates for manual interpretation V2.
 
 Input:
-    outputs/results/collocations_v2/targeted_collocations_kwic_results_clean_lexical_v2.xlsx
+    outputs/confidential/review_files/collocations_v2/targeted_collocations_kwic_results_clean_lexical_v2.xlsx
 
 Output:
-    outputs/results/collocations_v2/review_top_collocates_sorted_for_manual_review_v2.xlsx
+    outputs/confidential/review_files/collocations_v2/review_top_collocates_sorted_for_manual_review_v2.xlsx
 
 Usage from project root:
     python scripts/09_sort_collocation_review_v2.py
@@ -18,8 +18,8 @@ import pandas as pd
 
 PROJECT_DIR = Path.cwd()
 
-IN_PATH = PROJECT_DIR / "outputs/results/collocations_v2/targeted_collocations_kwic_results_clean_lexical_v2.xlsx"
-OUT_PATH = PROJECT_DIR / "outputs/results/collocations_v2/review_top_collocates_sorted_for_manual_review_v2.xlsx"
+IN_PATH = PROJECT_DIR / "outputs/confidential/review_files/collocations_v2/targeted_collocations_kwic_results_clean_lexical_v2.xlsx"
+OUT_PATH = PROJECT_DIR / "outputs/confidential/review_files/collocations_v2/review_top_collocates_sorted_for_manual_review_v2.xlsx"
 
 SHEET_NAME = "review_top_collocates"
 

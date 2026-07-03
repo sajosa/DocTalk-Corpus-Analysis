@@ -27,7 +27,7 @@ Recommended workflow
 python scripts/08_run_targeted_collocations_kwic_v2.py \
   --utterances outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv \
   --keyness-xlsx outputs/public/tables/keyness_review_top_items.xlsx \
-  --out-dir outputs/results/collocations_v2 \
+  --out-dir outputs/confidential/review_files/collocations_v2 \
   --content-col content_text_v2 \
   --interaction-col interaction_text_v2 \
   --window-size 5 \
@@ -820,8 +820,8 @@ def _find_default_keyness_file(project_dir: Path) -> Path | None:
     Returns None if no file is found.
     """
     candidates = [
-        project_dir / "outputs/results/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
-        project_dir / "outputs/results/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
+        project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
+        project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
         project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
         project_dir / "keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
     ]
@@ -855,7 +855,7 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("outputs/results/collocations_v2"),
+        default=Path("outputs/confidential/review_files/collocations_v2"),
         help="Output directory relative to project dir or absolute.",
     )
 

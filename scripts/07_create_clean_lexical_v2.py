@@ -30,7 +30,7 @@ Outputs:
     outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
     outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv
     outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv
-    outputs/results/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx
+    outputs/public/tables/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx
 
 Usage from project root:
     python scripts/07_create_clean_lexical_v2.py
@@ -50,7 +50,7 @@ DIRECT_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/D_utteran
 GROUP_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv"
 
 COMBINED_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv"
-MARKER_OUT = PROJECT_DIR / "outputs/results/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx"
+MARKER_OUT = PROJECT_DIR / "outputs/public/tables/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx"
 
 TEXT_COL = "text_clean_lexical"
 

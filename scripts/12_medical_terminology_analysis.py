@@ -47,7 +47,7 @@ Backends
 
 Outputs
 -------
-outputs/results/medical_terminology_model/
+outputs/confidential/review_files/medical_terminology_model/
   model_entity_mentions_long.xlsx
   model_entity_candidates_for_review.xlsx
   model_entity_summary_by_corpus.xlsx
@@ -82,7 +82,7 @@ LOGGER = logging.getLogger("medical_terminology_model")
 
 DEFAULT_DIRECT_PATH = "outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical.csv"
 DEFAULT_GROUP_PATH = "outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical.csv"
-DEFAULT_OUTPUT_DIR = "outputs/results/medical_terminology_model"
+DEFAULT_OUTPUT_DIR = "outputs/confidential/review_files/medical_terminology_model"
 
 DEFAULT_HUMADEX_MODEL = "HUMADEX/german_medical_ner"
 DEFAULT_MEDNER_MODEL = "pei-germany/MEDNER-de-fp-gbert"

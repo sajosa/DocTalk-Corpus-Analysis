@@ -16,7 +16,7 @@ Direct messages:
 Group messages:
     outputs/confidential/dataframes/G_utterances_raw.csv
     outputs/confidential/dataframes/G_metadata_validated.csv
-    outputs/results/tables/G_none_group_threads_for_manual_validation_with_full_texts_template.xlsx
+    outputs/confidential/review_files/metadata_validation/G_none_group_threads_for_manual_validation_with_full_texts_template.xlsx
     outputs/confidential/corpus_objects/G_corpus/          (optional)
 
 Important notes
@@ -928,7 +928,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         "--results_table_dir",
         type=Path,
         default=None,
-        help="Output directory for public/non-confidential review templates. Default: <project_root>/outputs/results/tables",
+        help="Output directory for confidential review templates. Default: <project_root>/outputs/confidential/review_files/metadata_validation",
     )
     parser.add_argument(
         "--manual_group_validation_file",

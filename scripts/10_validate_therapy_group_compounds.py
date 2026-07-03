@@ -11,7 +11,7 @@ Input:
     outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical.csv
 
 Output:
-    outputs/results/collocations/therapy_group_compound_validation.xlsx
+    outputs/confidential/validation_tables/therapy_group_compound_validation.xlsx
 
 Usage from project root:
     python scripts/10_validate_therapy_group_compounds.py
@@ -25,7 +25,7 @@ import pandas as pd
 PROJECT_DIR = Path.cwd()
 
 IN_PATH = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical.csv"
-OUT_PATH = PROJECT_DIR / "outputs/results/collocations/therapy_group_compound_validation.xlsx"
+OUT_PATH = PROJECT_DIR / "outputs/confidential/validation_tables/therapy_group_compound_validation.xlsx"
 
 TEXT_COL = "text_clean_lexical"
 
