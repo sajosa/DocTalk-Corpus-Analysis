@@ -1,0 +1,95 @@
+direction,message_type,emoji_shortcode,count,percentage,is_excluded_artifact,category,unicode_display
+direct,Direct messages,:+1:,23,14.37,False,approval / agreement,👍
+direct,Direct messages,:sweat_smile:,13,8.12,False,humor / softening,😅
+direct,Direct messages,:blush:,12,7.5,False,positive affect / friendliness,😊
+direct,Direct messages,:relaxed:,9,5.62,False,positive affect / friendliness,☺️
+direct,Direct messages,:wink:,7,4.38,False,positive affect / friendliness,😉
+direct,Direct messages,:slightly_smiling_face:,7,4.38,False,positive affect / friendliness,🙂
+direct,Direct messages,:joy:,5,3.12,False,humor / softening,😂
+direct,Direct messages,:face_with_rolling_eyes:,4,2.5,False,skepticism / mild negativity,🙄
+direct,Direct messages,:innocent:,4,2.5,False,positive affect / friendliness,😇
+direct,Direct messages,:grinning:,3,1.88,False,positive affect / friendliness,😀
+direct,Direct messages,:unamused:,3,1.88,False,skepticism / mild negativity,😒
+direct,Direct messages,:thinking_face:,3,1.88,False,concern / uncertainty,🤔
+direct,Direct messages,:see_no_evil:,3,1.88,False,humor / softening,🙈
+direct,Direct messages,:woman_shrugging:,3,1.88,False,concern / uncertainty,🤷‍♀️
+direct,Direct messages,:roll_eyes:,3,1.88,False,skepticism / mild negativity,🙄
+direct,Direct messages,:sun_with_face:,3,1.88,False,positive affect / friendliness,🌞
+direct,Direct messages,:nerd_face:,2,1.25,False,humor / softening,🤓
+direct,Direct messages,:no_mouth:,2,1.25,False,skepticism / mild negativity,😶
+direct,Direct messages,:stuck_out_tongue:,2,1.25,False,humor / softening,😛
+direct,Direct messages,:upside_down_face:,2,1.25,False,skepticism / mild negativity,🙃
+direct,Direct messages,:smile:,2,1.25,False,positive affect / friendliness,😄
+direct,Direct messages,:woman-shrugging:,2,1.25,False,concern / uncertainty,🤷‍♀️
+direct,Direct messages,:face_with_hand_over_mouth:,2,1.25,False,humor / softening,🤭
+direct,Direct messages,:muscle:,2,1.25,False,approval / agreement,💪
+direct,Direct messages,:grin:,2,1.25,False,positive affect / friendliness,😁
+direct,Direct messages,:v:,2,1.25,False,approval / agreement,✌️
+direct,Direct messages,:innen:,1,0.62,True,excluded non-emoji artefact,
+direct,Direct messages,:thinking:,1,0.62,False,concern / uncertainty,🤔
+direct,Direct messages,:worried:,1,0.62,False,concern / uncertainty,😟
+direct,Direct messages,:cake:,1,0.62,False,celebration / seasonal,🎂
+direct,Direct messages,:coffee:,1,0.62,False,objects / symbols / other,☕
+direct,Direct messages,:sleeping:,1,0.62,False,objects / symbols / other,😴
+direct,Direct messages,:zany_face:,1,0.62,False,humor / softening,🤪
+direct,Direct messages,:disguised_face:,1,0.62,False,humor / softening,🥸
+direct,Direct messages,:mask:,1,0.62,False,objects / symbols / other,😷
+direct,Direct messages,:sandwich:,1,0.62,False,objects / symbols / other,🥪
+direct,Direct messages,:green_salad:,1,0.62,False,objects / symbols / other,🥗
+direct,Direct messages,:hamburger:,1,0.62,False,objects / symbols / other,🍔
+direct,Direct messages,:stuck_out_tongue_winking_eye:,1,0.62,False,humor / softening,😜
+direct,Direct messages,:confused:,1,0.62,False,concern / uncertainty,😕
+direct,Direct messages,:smiley:,1,0.62,False,positive affect / friendliness,😃
+direct,Direct messages,:Patient:,1,0.62,True,excluded non-emoji artefact,
+direct,Direct messages,:rocket:,1,0.62,False,approval / agreement,🚀
+direct,Direct messages,:christmas_tree:,1,0.62,False,celebration / seasonal,🎄
+direct,Direct messages,:frowning_face:,1,0.62,False,concern / uncertainty,☹️
+direct,Direct messages,:couch_and_lamp:,1,0.62,False,objects / symbols / other,🛋️
+direct,Direct messages,:stew:,1,0.62,False,objects / symbols / other,🍲
+direct,Direct messages,:scream:,1,0.62,False,concern / uncertainty,😱
+direct,Direct messages,:sunglasses:,1,0.62,False,positive affect / friendliness,😎
+direct,Direct messages,:ok_hand:,1,0.62,False,approval / agreement,👌
+direct,Direct messages,:grimacing:,1,0.62,False,concern / uncertainty,😬
+direct,Direct messages,:bulb:,1,0.62,False,information / direction,💡
+direct,Direct messages,:arrow_right:,1,0.62,False,information / direction,➡️
+direct,Direct messages,:call_me_hand:,1,0.62,False,positive affect / friendliness,🤙
+direct,Direct messages,:hugging_face:,1,0.62,False,positive affect / friendliness,🤗
+direct,Direct messages,:kissing_heart:,1,0.62,False,affection / support,😘
+direct,Direct messages,:champagne:,1,0.62,False,celebration / seasonal,🍾
+direct,Direct messages,:pray:,1,0.62,False,affection / support,🙏
+direct,Direct messages,:tulip:,1,0.62,False,affection / support,🌷
+direct,Direct messages,:smiling_face_with_3_hearts:,1,0.62,False,positive affect / friendliness,
+direct,Direct messages,:hearts:,1,0.62,False,affection / support,♥️
+group,Group messages,:blush:,12,16.22,False,positive affect / friendliness,😊
+group,Group messages,:1:,8,10.81,True,excluded non-emoji artefact,
+group,Group messages,:+1:,6,8.11,False,approval / agreement,👍
+group,Group messages,:iphone:,6,8.11,False,objects / symbols / other,📱
+group,Group messages,:relaxed:,4,5.41,False,positive affect / friendliness,☺️
+group,Group messages,:wink:,3,4.05,False,positive affect / friendliness,😉
+group,Group messages,:sunflower:,3,4.05,False,positive affect / friendliness,🌻
+group,Group messages,:sweat_smile:,3,4.05,False,humor / softening,😅
+group,Group messages,:grinning:,2,2.7,False,positive affect / friendliness,😀
+group,Group messages,:partying_face:,2,2.7,False,celebration / seasonal,🥳
+group,Group messages,:joy:,2,2.7,False,humor / softening,😂
+group,Group messages,:tada:,2,2.7,False,objects / symbols / other,🎉
+group,Group messages,:mailbox_with_no_mail:,1,1.35,False,objects / symbols / other,📭
+group,Group messages,:smiley:,1,1.35,False,positive affect / friendliness,😃
+group,Group messages,:weary:,1,1.35,False,concern / uncertainty,😩
+group,Group messages,:sleepy:,1,1.35,False,concern / uncertainty,😪
+group,Group messages,:four_leaf_clover:,1,1.35,False,positive affect / friendliness,🍀
+group,Group messages,:hot_face:,1,1.35,False,concern / uncertainty,🥵
+group,Group messages,:mountain_bicyclist:,1,1.35,False,objects / symbols / other,🚵
+group,Group messages,:innen:,1,1.35,True,excluded non-emoji artefact,
+group,Group messages,:00:,1,1.35,True,excluded non-emoji artefact,
+group,Group messages,:20:,1,1.35,True,excluded non-emoji artefact,
+group,Group messages,:innocent:,1,1.35,False,positive affect / friendliness,😇
+group,Group messages,:white_check_mark:,1,1.35,False,approval / agreement,✅
+group,Group messages,:apple:,1,1.35,False,objects / symbols / other,🍎
+group,Group messages,:tulip:,1,1.35,False,affection / support,🌷
+group,Group messages,:sun_with_face:,1,1.35,False,positive affect / friendliness,🌞
+group,Group messages,:heart_eyes:,1,1.35,False,affection / support,😍
+group,Group messages,:clown_face:,1,1.35,False,humor / softening,🤡
+group,Group messages,:cold_sweat:,1,1.35,False,concern / uncertainty,😰
+group,Group messages,:upside_down_face:,1,1.35,False,skepticism / mild negativity,🙃
+group,Group messages,:stuck_out_tongue_winking_eye:,1,1.35,False,humor / softening,😜
+group,Group messages,:smirk:,1,1.35,False,humor / softening,😏

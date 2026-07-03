@@ -15,6 +15,8 @@ Default inputs:
 
 Default public outputs:
     outputs/public/tables/emoji/emoji_analysis_tables.xlsx
+
+
 """
 
 from __future__ import annotations

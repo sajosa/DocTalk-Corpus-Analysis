@@ -1,0 +1,3 @@
+direction,message_type,total_utterances,utterances_with_communicative_unicode_emojis,total_communicative_unicode_emojis,unique_communicative_unicode_emojis,utterances_with_emoji_shortcodes,total_emoji_shortcodes_before_artifact_exclusion,unique_emoji_shortcodes_before_artifact_exclusion,percentage_utterances_with_emoji_shortcodes,notes,total_retained_emoji_shortcodes,unique_retained_emoji_shortcodes
+direct,Direct messages,4915,0,0,0,153,160,61,3.11,Aggregated counts only; no message text included in public outputs.,158,59
+group,Group messages,2547,0,0,0,63,74,33,2.47,Aggregated counts only; no message text included in public outputs.,63,29
