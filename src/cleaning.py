@@ -4,7 +4,7 @@ cleaning.py
 Rule-based text cleaning functions for lexical corpus analyses.
 
 This module contains the actual cleaning logic used by
-scripts/03_clean_lexical.py.
+scripts/02_clean_lexical.py.
 
 The cleaning rules are designed for lexical frequency analyses,
 N-gram analyses, and related corpus-linguistic analyses.
@@ -12,8 +12,8 @@ N-gram analyses, and related corpus-linguistic analyses.
 The original corpus tables should remain unchanged.
 
 to run use: 
-python scripts/03_clean_lexical.py --corpus both
-python scripts/06_frequency_ngram_keyness.py --corpus both --min-count 3
+python scripts/02_clean_lexical.py --corpus both
+python scripts/04_frequency_ngram_keyness.py --corpus both --min-count 3
 
 """
 
