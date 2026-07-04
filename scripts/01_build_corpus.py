@@ -6,8 +6,20 @@
 Build raw analysis tables and optional ConvoKit corpus objects from exported
 DocTalk chat CSV files.
 
-Main outputs
-------------
+Expected inputs
+---------------
+Direct message exports:
+    data/direct/*.csv
+
+Group message exports:
+    data/group/*.csv
+
+Optional:
+    A manually curated group metadata validation file can be supplied via
+    --manual_group_validation_file.
+
+Confidential outputs
+--------------------
 Direct messages:
     outputs/confidential/dataframes/D_utterances_raw.csv
     outputs/confidential/dataframes/D_metadata_raw.csv
@@ -22,6 +34,8 @@ Group messages:
 Important notes
 ---------------
 - Raw clinical chat exports should not be committed to a public repository.
+- The group metadata validation template may contain original message text and
+  is therefore written to outputs/confidential/review_files/.
 - For GitHub/Zenodo, run the script on a synthetic sample or provide the code
   only, plus clear instructions for expected input structure.
 - The timestamp conversion maps anonymized weekday + time strings to a fixed
@@ -34,10 +48,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 import pandas as pd
 
@@ -176,6 +189,12 @@ def read_metadata_from_csv(
 
 
 def read_all_metadata(input_dir: Path, *, encoding: str, sep: str) -> pd.DataFrame:
+    """
+    Read metadata records from all CSV exports in a directory.
+
+    Returns one metadata row per conversation/export file.
+    """
+    
     records: List[Dict[str, object]] = []
 
     for file_path in sorted(input_dir.glob("*.csv")):
@@ -202,6 +221,12 @@ def read_messages_from_csv(
     skipfooter: int,
     usecols: Optional[List[int]],
 ) -> pd.DataFrame:
+    """
+    Read the message table from one Mattermost CSV export.
+
+    The table header is detected dynamically because exported files contain
+    metadata rows before the actual message table.
+    """
     header_start = find_header_start(file_path, encoding=encoding)
 
     read_kwargs = {
@@ -250,6 +275,11 @@ def read_all_messages(
 
 
 def validate_date_column(df: pd.DataFrame, *, label: str) -> None:
+    """
+    Validate that the message table contains anonymized weekday-time strings.
+
+    Expected format is e.g. 'Monday 10:31'. Real calendar dates are not used.
+    """
     if "date" not in df.columns:
         raise ValueError(
             f"Required column 'date' not found in {label}. "
@@ -359,6 +389,9 @@ def standardize_message_columns(df: pd.DataFrame, *, corpus_prefix: str) -> pd.D
 
 
 def drop_helper_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove intermediate timestamp-construction columns before export.
+    """
     helper_cols = [
         "date",
         "time",
@@ -378,6 +411,12 @@ def normalize_team_name(name: object) -> str:
 
 
 def harmonize_team_name(name: str) -> str:
+    """
+    Collapse project-specific team-name variants to stable analysis labels.
+
+    These rules reduce spelling/export variants while preserving analytically
+    relevant team categories.
+    """
     if name.startswith("endoskopie-"):
         return "endoskopie"
     if name.startswith("gastro-"):
@@ -406,8 +445,12 @@ def create_group_validation_template(
     output_file: Path,
 ) -> pd.DataFrame:
     """
-    Create an Excel template for manual team-name validation of group threads
-    with missing metadata ('none'). This mirrors the group-message notebook logic.
+    Create a confidential Excel template for manual validation of group threads
+    with missing team metadata ('none').
+
+    The template may include full thread text to support manual team assignment.
+    It must therefore be written only to outputs/confidential/review_files/.
+    This mirrors the group-message notebook validation logic.
     """
     none_threads = metadata_df[metadata_df["team_name_harmonized"] == "none"].copy()
 
@@ -995,7 +1038,13 @@ def make_config(args: argparse.Namespace) -> BuildConfig:
     ).resolve()
     results_table_dir = (
         args.results_table_dir
-        or (project_root / "outputs" / "results" / "tables")
+        or (
+            project_root
+            / "outputs"
+            / "confidential"
+            / "review_files"
+            / "metadata_validation"
+        )
     ).resolve()
 
     exclude_group_teams = [
