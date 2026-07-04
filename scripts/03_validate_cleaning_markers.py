@@ -32,6 +32,8 @@ Optional:
     python scripts/03_validate_cleaning_markers.py --corpus both --max-examples 200
 """
 
+from __future__ import annotations
+
 import argparse
 import re
 from pathlib import Path
@@ -49,7 +51,6 @@ RAW_INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "dataframes"
 CLEANED_INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "validation_tables"
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 CORPUS_CONFIG = {
@@ -368,7 +369,10 @@ def validate_corpus(corpus_name: str, max_examples: int) -> None:
     elif "text" in cleaned_df.columns:
         original_col = "text"
     else:
-        original_col = raw_text_col
+        raise ValueError(
+            "Cleaned table must contain either 'text_original' or 'text' "
+            "for original-versus-cleaned validation."
+        )
 
     # Before cleaning
     placeholders_before = extract_marker_counts(
@@ -433,18 +437,22 @@ def validate_corpus(corpus_name: str, max_examples: int) -> None:
         cleaned_text_col,
     )
     standard_token_counts = count_standard_tokens(
-    cleaned_df,
-    cleaned_text_col,
-    STANDARD_TOKENS,
+        cleaned_df,
+        cleaned_text_col,
+        STANDARD_TOKENS,
     )
 
     output_file = OUTPUT_DIR / f"{prefix}_cleaning_validation.xlsx"
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 
     with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
         summary.to_excel(writer, sheet_name="summary", index=False)
 
-        standard_token_counts.to_excel(writer,sheet_name="standard_token_counts",
-        index=False)
+        standard_token_counts.to_excel(
+            writer,
+            sheet_name="standard_token_counts",
+            index=False,
+        )
 
         placeholders_before.to_excel(writer, sheet_name="placeholders_before", index=False)
         hashtags_before.to_excel(writer, sheet_name="hashtags_before", index=False)
@@ -464,7 +472,7 @@ def validate_corpus(corpus_name: str, max_examples: int) -> None:
 # Command-line interface
 # ---------------------------------------------------------------------
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate raw and cleaned corpus tables for remaining markers."
     )
