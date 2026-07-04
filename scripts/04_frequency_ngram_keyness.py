@@ -1232,8 +1232,12 @@ def main() -> None:
     parser.add_argument(
         "--min-count",
         type=int,
-        default=1,
-        help="Minimum frequency threshold for tokens and N-grams.",
+        default=3,
+        help=(
+            "Minimum frequency threshold for tokens and N-grams. "
+            "Default: 3 to avoid exporting rare text-adjacent N-grams "
+            "to public output tables."
+        ),
     )
 
     args = parser.parse_args()
