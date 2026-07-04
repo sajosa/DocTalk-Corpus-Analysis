@@ -1,15 +1,5 @@
-###
-# to start, run the following command in the terminal: 
-# python scripts/02_clean_lexical.py --corpus direct
-# or
-# python scripts/02_clean_lexical.py --corpus group
-# or
-# python scripts/02_clean_lexical.py --corpus both
-###
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 02_clean_lexical.py
 
@@ -20,8 +10,8 @@ group-message utterance tables for lexical analyses.
 
 This script applies a rule-based cleaning pipeline to the message text.
 The original exported utterance tables remain unchanged. The cleaned
-outputs are intended for lexical frequency analyses, N-gram analyses,
-and related corpus-linguistic analyses.
+outputs are intended for lexical frequency analyses, n-gram analyses,
+keyness analyses, and related corpus-linguistic analyses.
 
 The cleaned corpus versions should not be used for temporal analyses,
 conversation-structure analyses, emoji analyses, or sentiment analyses.
@@ -33,7 +23,7 @@ Expected input files:
     outputs/confidential/dataframes/D_utterances_raw.csv
     outputs/confidential/dataframes/G_utterances_raw.csv
 
-Each input table must contain a text column, usually named:
+Each input table must contain a message text column named:
 
     text
 
@@ -75,41 +65,34 @@ Run from the project root directory:
     python scripts/02_clean_lexical.py --corpus group
     python scripts/02_clean_lexical.py --corpus both
 
-Arguments
----------
---corpus:
-    direct  Clean only the direct-message corpus.
-    group   Clean only the group-message corpus.
-    both    Clean both corpora sequentially.
-
 Confidentiality
 ---------------
-The outputs may still contain message-level text and must therefore be
-treated as confidential. They are written to outputs/confidential/ and
-should not be committed to GitHub.
-
-Author
-------
-Sabine Sayegh-Jodehl
+The outputs contain message-level text and must therefore be treated as
+confidential. They are written to outputs/confidential/ and should not be
+committed to a public repository.
 
 Project
 -------
 DocTalk chat corpus analysis / JMIR reproducibility pipeline
 """
+
+from __future__ import annotations
+
+import argparse
 import sys
 from pathlib import Path
-import argparse
+
 import pandas as pd
+
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_DIR))
 
-from src.cleaning import clean_text_lexical
+from src.cleaning import clean_text_lexical  # noqa: E402
+
 
 INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "dataframes"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
-
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 CORPUS_CONFIG = {
@@ -124,20 +107,24 @@ CORPUS_CONFIG = {
 }
 
 
-def clean_corpus(corpus_name: str):
+def clean_corpus(corpus_name: str) -> dict[str, object]:
     """
     Load one utterance table, apply lexical cleaning, and save the result.
-    """
 
+    The original message text is preserved in text_original. The cleaned text
+    is stored in text_clean_lexical.
+    """
     config = CORPUS_CONFIG[corpus_name]
+    input_file = config["input_file"]
+    output_file = config["output_file"]
 
     print(f"Cleaning corpus: {corpus_name}")
-    print(f"Input file: {config['input_file']}")
+    print(f"Input file: {input_file}")
 
-    if not config["input_file"].exists():
-        raise FileNotFoundError(f"Input file not found: {config['input_file']}")
+    if not input_file.exists():
+        raise FileNotFoundError(f"Input file not found: {input_file}")
 
-    df = pd.read_csv(config["input_file"])
+    df = pd.read_csv(input_file)
 
     if "text" not in df.columns:
         raise ValueError(
@@ -146,15 +133,27 @@ def clean_corpus(corpus_name: str):
         )
 
     df["text_original"] = df["text"]
-    df["text_clean_lexical"] = df["text"].apply(clean_text_lexical)
+    df["text_clean_lexical"] = df["text"].fillna("").astype(str).apply(clean_text_lexical)
 
-    df.to_csv(config["output_file"], index=False)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_file, index=False, encoding="utf-8")
 
-    print(f"Saved cleaned corpus to: {config['output_file']}")
+    summary = {
+        "corpus": corpus_name,
+        "input_file": str(input_file),
+        "output_file": str(output_file),
+        "n_rows": int(len(df)),
+        "n_empty_cleaned_texts": int((df["text_clean_lexical"].astype(str).str.strip() == "").sum()),
+    }
+
+    print(f"Saved cleaned corpus to: {output_file}")
+    print(f"Rows: {summary['n_rows']}")
+    print(f"Empty cleaned texts: {summary['n_empty_cleaned_texts']}")
+
+    return summary
 
 
-### main function to run the cleaning pipeline for the direct and/or group message corpora, depending on user input
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Clean direct and/or group message corpora for lexical analyses."
     )
@@ -166,7 +165,11 @@ def main():
         help="Choose which corpus to clean: direct, group, or both.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
 
     print(f"Selected corpus option: {args.corpus}")
 
@@ -174,11 +177,13 @@ def main():
         print("Cleaning both direct-message and group-message corpora...")
         clean_corpus("direct")
         clean_corpus("group")
-
     else:
         print(f"Cleaning {args.corpus}-message corpus...")
         clean_corpus(args.corpus)
 
+    print("Done.")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
