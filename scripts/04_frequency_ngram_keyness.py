@@ -1,35 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 04_frequency_ngram_keyness.py
 
 Purpose
 -------
-Generate lexical frequency and N-gram tables for the cleaned direct-message
-and group-message corpora.
+Generate lexical frequency, N-gram, and Direct-vs-Group keyness tables for
+the cleaned direct-message and group-message corpora.
 
 This script calculates:
 - word counts before and after lexical cleaning
-- token frequencies, all tokens
-- token frequencies, content tokens after content-stopword filtering
-- token frequencies, interaction/style tokens after interaction-stopword filtering
-- bigrams, all tokens
-- bigrams, content tokens
-- bigrams, interaction/style tokens
-- trigrams, all tokens
-- trigrams, content tokens
-- trigrams, interaction/style tokens
+- token frequencies based on all cleaned tokens
+- bigram frequencies based on all cleaned tokens
+- trigram frequencies based on all cleaned tokens
+- Direct-vs-Group keyness for tokens, bigrams, and trigrams
 
 Important methodological note
 -----------------------------
-For token frequencies, stopwords are removed before counting tokens.
+N-grams are created from the full cleaned token sequence. No separate
+content-versus-interaction views are generated in the final pipeline.
 
-For N-grams in filtered views such as content and interaction, N-grams are
-created from the full cleaned token sequence first. Afterwards, N-grams
-containing stopwords are excluded. This preserves original token adjacency
-and avoids artificial N-grams caused by removing stopwords before N-gram
-generation.
+Public frequency and N-gram tables apply the user-defined --min-count
+threshold. Direct-vs-Group keyness is computed from unthresholded internal
+frequency tables and then filtered by the user-defined minimum total count.
+This avoids treating low-frequency items in one corpus as zero when they are
+present but below the public reporting threshold.
 
 The script uses the cleaned corpus tables produced by:
 
@@ -47,22 +42,12 @@ Each input file must contain:
     text_original
     text_clean_lexical
 
-Rule files
-----------
-Expected rule files:
-
-    rules/stopwords_content.txt
-    rules/stopwords_interaction.txt
-    rules/protected_tokens.txt
-
-All files should contain one token per line.
-Empty lines and lines starting with '#' are ignored.
-
 Outputs
 -------
-Aggregated tables are written to:
+Aggregated public tables are written to:
 
     outputs/public/tables/frequency_ngram_results.xlsx
+    outputs/public/tables/keyness_direct_vs_group.xlsx
 
 Usage
 -----
@@ -75,7 +60,15 @@ Run from the project root directory:
 Optional:
 
     python scripts/04_frequency_ngram_keyness.py --corpus both --min-count 3
+
+Confidentiality
+---------------
+This script writes aggregated frequency and keyness tables only. No original
+message-level text is exported. The default minimum count is 3 to reduce the
+risk of exporting rare text-adjacent N-grams to public output tables.
 """
+
+from __future__ import annotations
 
 import argparse
 import math
@@ -94,18 +87,9 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 OUTPUT_DIR = PROJECT_DIR / "outputs" / "public" / "tables"
 
-
-RULES_DIR = PROJECT_DIR / "rules"
-
-STOPWORDS_CONTENT_FILE = RULES_DIR / "stopwords_content.txt"
-STOPWORDS_INTERACTION_FILE = RULES_DIR / "stopwords_interaction.txt"
-PROTECTED_TOKENS_FILE = RULES_DIR / "protected_tokens.txt"
-
-# Fallback for older project state
-LEGACY_STOPWORDS_FILE = RULES_DIR / "stopwords_custom.txt"
-
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+FREQUENCY_OUTPUT_FILE = OUTPUT_DIR / "frequency_ngram_results.xlsx"
 KEYNESS_OUTPUT_FILE = OUTPUT_DIR / "keyness_direct_vs_group.xlsx"
+
 
 CORPUS_CONFIG = {
     "direct": {
@@ -122,160 +106,7 @@ CORPUS_CONFIG = {
 
 
 # ---------------------------------------------------------------------
-# Default protected analytical tokens
-# ---------------------------------------------------------------------
-
-DEFAULT_PROTECTED_TOKENS = {
-    "PatName",
-    "KolName",
-    "Mention_KolName",
-    "Mention_All",
-    "Hashtag_PatName",
-    "Todo",
-    "kein_Todo",
-    "Datum",
-    "Monat",
-    "Jahr",
-    "Klinik",
-    "Klinikstandort",
-    "Telefonnummer",
-    "Link",
-    "Link_intern",
-    "Ort",
-    "Station",
-    "Übergabe",
-    "Rückmeldung",
-    "Patient",
-    "Mitpatient",
-    "Probatorik_Patient",
-    "Therapeut",
-    "Bezugstherapeut",
-    "Kreativtherapeut",
-    "Psychotherapeut",
-    "Behandler",
-    "Behandlerwechsel",
-    "Arzt",
-    "Psychologe",
-    "Psychiater",
-    "Freund",
-}
-
-
-# ---------------------------------------------------------------------
-# Rule loading helpers
-# ---------------------------------------------------------------------
-
-def load_token_list(token_file: Path, label: str) -> set[str]:
-    """
-    Load a token list from a text file.
-
-    One token per line. Empty lines and lines starting with '#'
-    are ignored.
-    """
-
-    if not token_file.exists():
-        print(f"Warning: {label} file not found: {token_file}")
-        return set()
-
-    tokens = set()
-
-    with open(token_file, "r", encoding="utf-8") as file:
-        for line in file:
-            token = line.strip()
-
-            if not token:
-                continue
-
-            if token.startswith("#"):
-                continue
-
-            tokens.add(token)
-
-    print(f"Loaded {len(tokens)} entries from {label}: {token_file}")
-
-    return tokens
-
-
-def load_stopwords(stopwords_file: Path, label: str) -> set[str]:
-    """
-    Load stopwords and normalize them to lowercase for case-insensitive
-    stopword filtering.
-    """
-
-    stopwords = load_token_list(stopwords_file, label)
-    return {word.lower() for word in stopwords}
-
-
-def load_protected_tokens(protected_tokens_file: Path) -> set[str]:
-    """
-    Load protected analytical tokens.
-
-    If no protected token file exists, use the default protected token set.
-    """
-
-    protected_tokens = load_token_list(
-        protected_tokens_file,
-        label="protected tokens",
-    )
-
-    if not protected_tokens:
-        protected_tokens = DEFAULT_PROTECTED_TOKENS
-        print(
-            "Using default protected tokens because no protected token file "
-            "was found or the file was empty."
-        )
-
-    return protected_tokens
-
-
-def load_rule_sets() -> tuple[set[str], set[str], set[str]]:
-    """
-    Load content stopwords, interaction stopwords, and protected tokens.
-
-    If the new content/interaction stopword files do not exist yet,
-    the script falls back to rules/stopwords_custom.txt for both views.
-    This keeps the script compatible with the previous project state.
-    """
-
-    protected_tokens = load_protected_tokens(PROTECTED_TOKENS_FILE)
-
-    if STOPWORDS_CONTENT_FILE.exists():
-        stopwords_content = load_stopwords(
-            STOPWORDS_CONTENT_FILE,
-            label="content stopwords",
-        )
-    else:
-        print(
-            f"Warning: content stopword file not found: "
-            f"{STOPWORDS_CONTENT_FILE}"
-        )
-        print(f"Trying fallback file: {LEGACY_STOPWORDS_FILE}")
-        stopwords_content = load_stopwords(
-            LEGACY_STOPWORDS_FILE,
-            label="legacy/content stopwords",
-        )
-
-    if STOPWORDS_INTERACTION_FILE.exists():
-        stopwords_interaction = load_stopwords(
-            STOPWORDS_INTERACTION_FILE,
-            label="interaction stopwords",
-        )
-    else:
-        print(
-            f"Warning: interaction stopword file not found: "
-            f"{STOPWORDS_INTERACTION_FILE}"
-        )
-        print(f"Trying fallback file: {LEGACY_STOPWORDS_FILE}")
-        stopwords_interaction = load_stopwords(
-            LEGACY_STOPWORDS_FILE,
-            label="legacy/interaction stopwords",
-        )
-
-    return stopwords_content, stopwords_interaction, protected_tokens
-
-
-# ---------------------------------------------------------------------
-# Tokenization and filtering helpers
+# Tokenization helpers
 # ---------------------------------------------------------------------
 
 def simple_tokenize(text: str) -> list[str]:
@@ -286,7 +117,6 @@ def simple_tokenize(text: str) -> list[str]:
     such as PatName, KolName, Mention_KolName, Hashtag_PatName, and
     kein_Todo were intentionally preserved as single tokens.
     """
-
     if not isinstance(text, str):
         return []
 
@@ -298,57 +128,10 @@ def simple_tokenize(text: str) -> list[str]:
     return text.split()
 
 
-def token_is_allowed_in_view(
-    token: str,
-    stopwords: set[str],
-    protected_tokens: set[str],
-) -> bool:
-    """
-    Check whether a token should be kept in a filtered analytical view.
-
-    Protected analytical tokens are always allowed.
-    Stopword matching is case-insensitive.
-    """
-
-    if token in protected_tokens:
-        return True
-
-    if token.lower() in stopwords:
-        return False
-
-    return True
-
-
-def filter_tokens(
-    tokens: list[str],
-    stopwords: set[str],
-    protected_tokens: set[str],
-) -> list[str]:
-    """
-    Remove stopwords from a token list while preserving standardized
-    analytical tokens.
-
-    Stopword matching is case-insensitive.
-    Protected-token matching is case-sensitive to preserve standardized
-    analytical markers exactly as generated by the cleaning script.
-    """
-
-    return [
-        token
-        for token in tokens
-        if token_is_allowed_in_view(
-            token,
-            stopwords=stopwords,
-            protected_tokens=protected_tokens,
-        )
-    ]
-
-
 def count_words_in_series(text_series: pd.Series) -> int:
     """
     Count whitespace-separated tokens in a pandas Series.
     """
-
     return (
         text_series
         .fillna("")
@@ -366,7 +149,6 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
     """
     Create word count summary before and after lexical cleaning.
     """
-
     if "text_original" not in df.columns:
         raise ValueError("Input table must contain 'text_original'.")
 
@@ -388,7 +170,7 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
         else 0
     )
 
-    summary = pd.DataFrame(
+    return pd.DataFrame(
         [
             {
                 "corpus": corpus_label,
@@ -403,8 +185,6 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
         ]
     )
 
-    return summary
-
 
 # ---------------------------------------------------------------------
 # Frequency and N-gram helpers
@@ -413,40 +193,15 @@ def create_word_count_summary(df: pd.DataFrame, corpus_label: str) -> pd.DataFra
 def create_token_frequency_table(
     df: pd.DataFrame,
     corpus_label: str,
-    view: str,
     min_count: int = 1,
-    stopwords: set[str] | None = None,
-    protected_tokens: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create token frequency table from cleaned text.
-
-    For filtered views, stopwords are removed before token counting.
-
-    view can be:
-    - all
-    - content
-    - interaction
     """
-
-    if stopwords is None:
-        stopwords = set()
-
-    if protected_tokens is None:
-        protected_tokens = set()
-
-    counter = Counter()
+    counter: Counter[str] = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
-
-        if view != "all":
-            tokens = filter_tokens(
-                tokens,
-                stopwords=stopwords,
-                protected_tokens=protected_tokens,
-            )
-
         counter.update(tokens)
 
     records = []
@@ -457,7 +212,7 @@ def create_token_frequency_table(
             records.append(
                 {
                     "corpus": corpus_label,
-                    "view": view,
+                    "view": "all",
                     "token": token,
                     "count": count,
                     "relative_frequency_per_1000_tokens": (
@@ -479,7 +234,6 @@ def make_ngrams(tokens: list[str], n: int) -> list[tuple[str, ...]]:
     """
     Create n-grams from a token list.
     """
-
     if len(tokens) < n:
         return []
 
@@ -489,54 +243,17 @@ def make_ngrams(tokens: list[str], n: int) -> list[tuple[str, ...]]:
 def create_ngram_frequency_table(
     df: pd.DataFrame,
     corpus_label: str,
-    view: str,
     n: int,
     min_count: int = 1,
-    stopwords: set[str] | None = None,
-    protected_tokens: set[str] | None = None,
 ) -> pd.DataFrame:
     """
     Create N-gram frequency table from cleaned text.
-
-    For the all-token view, N-grams are built from all cleaned tokens.
-
-    For filtered views such as content and interaction, N-grams are first
-    built from the full cleaned token sequence and only then filtered.
-    This preserves original adjacency and avoids artificial N-grams that
-    would be created by removing stopwords before N-gram generation.
-
-    view can be:
-    - all
-    - content
-    - interaction
     """
-
-    if stopwords is None:
-        stopwords = set()
-
-    if protected_tokens is None:
-        protected_tokens = set()
-
-    counter = Counter()
+    counter: Counter[tuple[str, ...]] = Counter()
 
     for text in df["text_clean_lexical"].fillna("").astype(str):
         tokens = simple_tokenize(text)
         ngrams = make_ngrams(tokens, n)
-
-        if view != "all":
-            ngrams = [
-                ngram
-                for ngram in ngrams
-                if all(
-                    token_is_allowed_in_view(
-                        token,
-                        stopwords=stopwords,
-                        protected_tokens=protected_tokens,
-                    )
-                    for token in ngram
-                )
-            ]
-
         counter.update(ngrams)
 
     records = []
@@ -549,7 +266,7 @@ def create_ngram_frequency_table(
             records.append(
                 {
                     "corpus": corpus_label,
-                    "view": view,
+                    "view": "all",
                     "n": n,
                     "ngram": ngram,
                     "count": count,
@@ -576,7 +293,6 @@ def _get_total_from_frequency_table(df: pd.DataFrame) -> int:
     """
     Extract the total number of tokens or N-grams in the analytical view.
     """
-
     if df.empty:
         return 0
 
@@ -596,7 +312,6 @@ def _safe_log2(value: float) -> float:
     """
     Compute log2 safely.
     """
-
     if value <= 0:
         return 0.0
 
@@ -608,7 +323,6 @@ def compute_keyness_table(
     group_df: pd.DataFrame,
     item_column: str,
     item_type: str,
-    view: str,
     min_total_count: int = 3,
     smoothing: float = 0.5,
 ) -> pd.DataFrame:
@@ -626,12 +340,14 @@ def compute_keyness_table(
     frequency in direct messages. Negative values indicate higher relative
     frequency in group messages.
     """
-
     if direct_df.empty and group_df.empty:
         return pd.DataFrame()
 
     direct_total = _get_total_from_frequency_table(direct_df)
     group_total = _get_total_from_frequency_table(group_df)
+
+    if direct_total == 0 or group_total == 0:
+        return pd.DataFrame()
 
     direct_counts = (
         direct_df.set_index(item_column)["count"].to_dict()
@@ -657,67 +373,49 @@ def compute_keyness_table(
         if total_count < min_total_count:
             continue
 
-        direct_freq_per_1000 = (
-            direct_count / direct_total * 1000
-            if direct_total > 0
-            else 0
-        )
-
-        group_freq_per_1000 = (
-            group_count / group_total * 1000
-            if group_total > 0
-            else 0
-        )
+        direct_freq_per_1000 = direct_count / direct_total * 1000
+        group_freq_per_1000 = group_count / group_total * 1000
 
         difference_per_1000 = direct_freq_per_1000 - group_freq_per_1000
 
-        # Smoothed relative frequencies
-        direct_prop_smoothed = (
-            (direct_count + smoothing) / (direct_total + smoothing)
-            if direct_total > 0
-            else 0
+        direct_prop_smoothed = (direct_count + smoothing) / (
+            direct_total + smoothing
         )
-
-        group_prop_smoothed = (
-            (group_count + smoothing) / (group_total + smoothing)
-            if group_total > 0
-            else 0
+        group_prop_smoothed = (group_count + smoothing) / (
+            group_total + smoothing
         )
 
         log_ratio = _safe_log2(direct_prop_smoothed / group_prop_smoothed)
 
-        # Smoothed odds ratio
         direct_non_count = max(direct_total - direct_count, 0)
         group_non_count = max(group_total - group_count, 0)
 
-        direct_odds = (direct_count + smoothing) / (direct_non_count + smoothing)
-        group_odds = (group_count + smoothing) / (group_non_count + smoothing)
+        direct_odds = (direct_count + smoothing) / (
+            direct_non_count + smoothing
+        )
+        group_odds = (group_count + smoothing) / (
+            group_non_count + smoothing
+        )
 
         odds_ratio_smoothed = direct_odds / group_odds if group_odds > 0 else 0
 
-        # Log-likelihood G2
         observed_total = direct_count + group_count
         corpus_total = direct_total + group_total
 
-        expected_direct = (
-            direct_total * observed_total / corpus_total
-            if corpus_total > 0
-            else 0
-        )
-
-        expected_group = (
-            group_total * observed_total / corpus_total
-            if corpus_total > 0
-            else 0
-        )
+        expected_direct = direct_total * observed_total / corpus_total
+        expected_group = group_total * observed_total / corpus_total
 
         log_likelihood = 0.0
 
         if direct_count > 0 and expected_direct > 0:
-            log_likelihood += direct_count * math.log(direct_count / expected_direct)
+            log_likelihood += direct_count * math.log(
+                direct_count / expected_direct
+            )
 
         if group_count > 0 and expected_group > 0:
-            log_likelihood += group_count * math.log(group_count / expected_group)
+            log_likelihood += group_count * math.log(
+                group_count / expected_group
+            )
 
         log_likelihood *= 2
 
@@ -733,7 +431,7 @@ def compute_keyness_table(
 
         records.append(
             {
-                "view": view,
+                "view": "all",
                 "item_type": item_type,
                 item_column: item,
                 "direction": direction,
@@ -769,17 +467,13 @@ def create_keyness_results(
     min_total_count: int = 3,
 ) -> dict[str, pd.DataFrame]:
     """
-    Create Direct-vs-Group keyness tables for selected analytical views.
+    Create Direct-vs-Group keyness tables for all-token analytical views.
 
     Keyness is computed for:
-    - content tokens
-    - interaction tokens
-    - content bigrams
-    - interaction bigrams
-    - content trigrams
-    - interaction trigrams
+    - all tokens
+    - all bigrams
+    - all trigrams
     """
-
     if "direct" not in results or "group" not in results:
         print(
             "Skipping keyness analysis because both direct and group "
@@ -792,52 +486,25 @@ def create_keyness_results(
 
     specs = [
         {
-            "name": "key_content_tokens",
-            "direct_key": "token_frequencies_content",
-            "group_key": "token_frequencies_content",
+            "name": "key_all_tokens",
+            "direct_key": "_keyness_token_frequencies_all",
+            "group_key": "_keyness_token_frequencies_all",
             "item_column": "token",
             "item_type": "token",
-            "view": "content",
         },
         {
-            "name": "key_interaction_tokens",
-            "direct_key": "token_frequencies_interaction",
-            "group_key": "token_frequencies_interaction",
-            "item_column": "token",
-            "item_type": "token",
-            "view": "interaction",
-        },
-        {
-            "name": "key_content_bigrams",
-            "direct_key": "bigrams_content",
-            "group_key": "bigrams_content",
+            "name": "key_all_bigrams",
+            "direct_key": "_keyness_bigrams_all",
+            "group_key": "_keyness_bigrams_all",
             "item_column": "ngram",
             "item_type": "bigram",
-            "view": "content",
         },
         {
-            "name": "key_interaction_bigrams",
-            "direct_key": "bigrams_interaction",
-            "group_key": "bigrams_interaction",
-            "item_column": "ngram",
-            "item_type": "bigram",
-            "view": "interaction",
-        },
-        {
-            "name": "key_content_trigrams",
-            "direct_key": "trigrams_content",
-            "group_key": "trigrams_content",
+            "name": "key_all_trigrams",
+            "direct_key": "_keyness_trigrams_all",
+            "group_key": "_keyness_trigrams_all",
             "item_column": "ngram",
             "item_type": "trigram",
-            "view": "content",
-        },
-        {
-            "name": "key_interaction_trigrams",
-            "direct_key": "trigrams_interaction",
-            "group_key": "trigrams_interaction",
-            "item_column": "ngram",
-            "item_type": "trigram",
-            "view": "interaction",
         },
     ]
 
@@ -849,11 +516,11 @@ def create_keyness_results(
             group_df=group_results[spec["group_key"]],
             item_column=spec["item_column"],
             item_type=spec["item_type"],
-            view=spec["view"],
             min_total_count=min_total_count,
         )
 
     return keyness_results
+
 
 # ---------------------------------------------------------------------
 # Main corpus processing
@@ -862,14 +529,14 @@ def create_keyness_results(
 def analyze_corpus(
     corpus_name: str,
     min_count: int,
-    stopwords_content: set[str],
-    stopwords_interaction: set[str],
-    protected_tokens: set[str],
 ) -> dict[str, pd.DataFrame]:
     """
     Run word count, token frequency, bigram, and trigram analyses for one corpus.
-    """
 
+    Public frequency and N-gram outputs use min_count. Internal keyness source
+    tables use min_count=1 to avoid biased zero counts in Direct-vs-Group
+    comparisons.
+    """
     config = CORPUS_CONFIG[corpus_name]
 
     print(f"\nAnalyzing corpus: {corpus_name}")
@@ -894,101 +561,51 @@ def analyze_corpus(
     token_frequencies_all = create_token_frequency_table(
         df,
         config["label"],
-        view="all",
         min_count=min_count,
-        stopwords=None,
-        protected_tokens=protected_tokens,
-    )
-
-    token_frequencies_content = create_token_frequency_table(
-        df,
-        config["label"],
-        view="content",
-        min_count=min_count,
-        stopwords=stopwords_content,
-        protected_tokens=protected_tokens,
-    )
-
-    token_frequencies_interaction = create_token_frequency_table(
-        df,
-        config["label"],
-        view="interaction",
-        min_count=min_count,
-        stopwords=stopwords_interaction,
-        protected_tokens=protected_tokens,
     )
 
     bigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
-        view="all",
         n=2,
         min_count=min_count,
-        stopwords=None,
-        protected_tokens=protected_tokens,
-    )
-
-    bigrams_content = create_ngram_frequency_table(
-        df,
-        config["label"],
-        view="content",
-        n=2,
-        min_count=min_count,
-        stopwords=stopwords_content,
-        protected_tokens=protected_tokens,
-    )
-
-    bigrams_interaction = create_ngram_frequency_table(
-        df,
-        config["label"],
-        view="interaction",
-        n=2,
-        min_count=min_count,
-        stopwords=stopwords_interaction,
-        protected_tokens=protected_tokens,
     )
 
     trigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
-        view="all",
         n=3,
         min_count=min_count,
-        stopwords=None,
-        protected_tokens=protected_tokens,
     )
 
-    trigrams_content = create_ngram_frequency_table(
+    keyness_token_frequencies_all = create_token_frequency_table(
         df,
         config["label"],
-        view="content",
-        n=3,
-        min_count=min_count,
-        stopwords=stopwords_content,
-        protected_tokens=protected_tokens,
+        min_count=1,
     )
 
-    trigrams_interaction = create_ngram_frequency_table(
+    keyness_bigrams_all = create_ngram_frequency_table(
         df,
         config["label"],
-        view="interaction",
+        n=2,
+        min_count=1,
+    )
+
+    keyness_trigrams_all = create_ngram_frequency_table(
+        df,
+        config["label"],
         n=3,
-        min_count=min_count,
-        stopwords=stopwords_interaction,
-        protected_tokens=protected_tokens,
+        min_count=1,
     )
 
     return {
         "word_counts": word_counts,
         "token_frequencies_all": token_frequencies_all,
-        "token_frequencies_content": token_frequencies_content,
-        "token_frequencies_interaction": token_frequencies_interaction,
         "bigrams_all": bigrams_all,
-        "bigrams_content": bigrams_content,
-        "bigrams_interaction": bigrams_interaction,
         "trigrams_all": trigrams_all,
-        "trigrams_content": trigrams_content,
-        "trigrams_interaction": trigrams_interaction,
+        "_keyness_token_frequencies_all": keyness_token_frequencies_all,
+        "_keyness_bigrams_all": keyness_bigrams_all,
+        "_keyness_trigrams_all": keyness_trigrams_all,
     }
 
 
@@ -998,30 +615,22 @@ def analyze_corpus(
 
 def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
     """
-    Write all results to a single Excel workbook with separate sheets.
-    """
+    Write public frequency and N-gram results to a single Excel workbook.
 
-    output_file = OUTPUT_DIR / "frequency_ngram_results.xlsx"
+    Internal keyness source tables are not exported.
+    """
+    output_file = FREQUENCY_OUTPUT_FILE
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 
     with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
         word_count_tables = []
-
         token_frequency_all_tables = []
-        token_frequency_content_tables = []
-        token_frequency_interaction_tables = []
-
         bigram_all_tables = []
-        bigram_content_tables = []
-        bigram_interaction_tables = []
-
         trigram_all_tables = []
-        trigram_content_tables = []
-        trigram_interaction_tables = []
 
         for corpus_name, corpus_results in results.items():
             prefix = CORPUS_CONFIG[corpus_name]["prefix"]
 
-            # Individual corpus sheets
             corpus_results["word_counts"].to_excel(
                 writer,
                 sheet_name=f"{prefix}_word_counts",
@@ -1034,33 +643,9 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-            corpus_results["token_frequencies_content"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_token_freq_content",
-                index=False,
-            )
-
-            corpus_results["token_frequencies_interaction"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_token_freq_interaction",
-                index=False,
-            )
-
             corpus_results["bigrams_all"].to_excel(
                 writer,
                 sheet_name=f"{prefix}_bigrams_all",
-                index=False,
-            )
-
-            corpus_results["bigrams_content"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_bigrams_content",
-                index=False,
-            )
-
-            corpus_results["bigrams_interaction"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_bigrams_interaction",
                 index=False,
             )
 
@@ -1070,42 +655,13 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-            corpus_results["trigrams_content"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_trigrams_content",
-                index=False,
-            )
-
-            corpus_results["trigrams_interaction"].to_excel(
-                writer,
-                sheet_name=f"{prefix}_trigrams_interaction",
-                index=False,
-            )
-
-            # Collect combined tables
             word_count_tables.append(corpus_results["word_counts"])
-
             token_frequency_all_tables.append(
                 corpus_results["token_frequencies_all"]
             )
-            token_frequency_content_tables.append(
-                corpus_results["token_frequencies_content"]
-            )
-            token_frequency_interaction_tables.append(
-                corpus_results["token_frequencies_interaction"]
-            )
-
             bigram_all_tables.append(corpus_results["bigrams_all"])
-            bigram_content_tables.append(corpus_results["bigrams_content"])
-            bigram_interaction_tables.append(corpus_results["bigrams_interaction"])
-
             trigram_all_tables.append(corpus_results["trigrams_all"])
-            trigram_content_tables.append(corpus_results["trigrams_content"])
-            trigram_interaction_tables.append(
-                corpus_results["trigrams_interaction"]
-            )
 
-        # Combined sheets
         if word_count_tables:
             pd.concat(word_count_tables, ignore_index=True).to_excel(
                 writer,
@@ -1120,41 +676,10 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-        if token_frequency_content_tables:
-            pd.concat(token_frequency_content_tables, ignore_index=True).to_excel(
-                writer,
-                sheet_name="combined_token_freq_content",
-                index=False,
-            )
-
-        if token_frequency_interaction_tables:
-            pd.concat(
-                token_frequency_interaction_tables,
-                ignore_index=True,
-            ).to_excel(
-                writer,
-                sheet_name="combined_token_freq_interaction",
-                index=False,
-            )
-
         if bigram_all_tables:
             pd.concat(bigram_all_tables, ignore_index=True).to_excel(
                 writer,
                 sheet_name="combined_bigrams_all",
-                index=False,
-            )
-
-        if bigram_content_tables:
-            pd.concat(bigram_content_tables, ignore_index=True).to_excel(
-                writer,
-                sheet_name="combined_bigrams_content",
-                index=False,
-            )
-
-        if bigram_interaction_tables:
-            pd.concat(bigram_interaction_tables, ignore_index=True).to_excel(
-                writer,
-                sheet_name="combined_bigrams_interaction",
                 index=False,
             )
 
@@ -1165,30 +690,18 @@ def write_results_to_excel(results: dict[str, dict[str, pd.DataFrame]]) -> None:
                 index=False,
             )
 
-        if trigram_content_tables:
-            pd.concat(trigram_content_tables, ignore_index=True).to_excel(
-                writer,
-                sheet_name="combined_trigrams_content",
-                index=False,
-            )
+    print(f"\nSaved frequency and N-gram results to: {output_file}")
 
-        if trigram_interaction_tables:
-            pd.concat(trigram_interaction_tables, ignore_index=True).to_excel(
-                writer,
-                sheet_name="combined_trigrams_interaction",
-                index=False,
-            )
-
-    print(f"\nSaved results to: {output_file}")
 
 def write_keyness_to_excel(keyness_results: dict[str, pd.DataFrame]) -> None:
     """
     Write Direct-vs-Group keyness results to a separate Excel workbook.
     """
-
     if not keyness_results:
         print("No keyness results to write.")
         return
+
+    KEYNESS_OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     with pd.ExcelWriter(KEYNESS_OUTPUT_FILE, engine="openpyxl") as writer:
         for sheet_name, df in keyness_results.items():
@@ -1214,11 +727,11 @@ def write_keyness_to_excel(keyness_results: dict[str, pd.DataFrame]) -> None:
 # Command-line interface
 # ---------------------------------------------------------------------
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate word count, token frequency, and N-gram tables "
-            "for all-token, content, and interaction/style views."
+            "Generate word count, token frequency, N-gram, and Direct-vs-Group "
+            "keyness tables for the cleaned lexical corpora."
         )
     )
 
@@ -1234,19 +747,19 @@ def main() -> None:
         type=int,
         default=3,
         help=(
-            "Minimum frequency threshold for tokens and N-grams. "
-            "Default: 3 to avoid exporting rare text-adjacent N-grams "
-            "to public output tables."
+            "Minimum frequency threshold for public token and N-gram tables, "
+            "and minimum total count for keyness tables. Default: 3."
         ),
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    (
-        stopwords_content,
-        stopwords_interaction,
-        protected_tokens,
-    ) = load_rule_sets()
+
+def main() -> int:
+    args = parse_args()
+
+    if args.min_count < 1:
+        raise ValueError("--min-count must be at least 1.")
 
     if args.corpus == "both":
         selected_corpora = ["direct", "group"]
@@ -1259,9 +772,6 @@ def main() -> None:
         results[corpus_name] = analyze_corpus(
             corpus_name,
             min_count=args.min_count,
-            stopwords_content=stopwords_content,
-            stopwords_interaction=stopwords_interaction,
-            protected_tokens=protected_tokens,
         )
 
     write_results_to_excel(results)
@@ -1278,6 +788,9 @@ def main() -> None:
             "for Direct-vs-Group comparison."
         )
 
+    print("Done.")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

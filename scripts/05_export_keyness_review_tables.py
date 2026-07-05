@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 05_export_keyness_review_tables.py
 
 Purpose
 -------
-Create small review tables from the Direct-vs-Group keyness results.
+Create compact review tables from the Direct-vs-Group keyness results.
 
 This script reads:
 
@@ -17,7 +16,11 @@ and writes:
     outputs/public/tables/keyness_review_top_items.xlsx
 
 The review workbook contains separate sheets for Direct-typical and
-Group-typical tokens/N-grams.
+Group-typical tokens, bigrams, and trigrams based on the cleaned lexical
+corpus.
+
+No separate content-versus-interaction views are exported in the final
+pipeline.
 
 Usage
 -----
@@ -29,7 +32,14 @@ Optional:
 
     python scripts/05_export_keyness_review_tables.py --top-n 30
     python scripts/05_export_keyness_review_tables.py --min-total-count 10
+
+Confidentiality
+---------------
+This script writes compact aggregated review tables only. No original
+message-level text is exported.
 """
+
+from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -66,40 +76,22 @@ OUTPUT_FILE = (
 
 SHEET_CONFIG = [
     {
-        "input_sheet": "key_content_tokens",
+        "input_sheet": "key_all_tokens",
         "item_column": "token",
-        "direct_output": "content_tokens_direct",
-        "group_output": "content_tokens_group",
+        "direct_output": "tokens_direct",
+        "group_output": "tokens_group",
     },
     {
-        "input_sheet": "key_interaction_tokens",
-        "item_column": "token",
-        "direct_output": "interaction_tokens_direct",
-        "group_output": "interaction_tokens_group",
-    },
-    {
-        "input_sheet": "key_content_bigrams",
+        "input_sheet": "key_all_bigrams",
         "item_column": "ngram",
-        "direct_output": "content_bigrams_direct",
-        "group_output": "content_bigrams_group",
+        "direct_output": "bigrams_direct",
+        "group_output": "bigrams_group",
     },
     {
-        "input_sheet": "key_interaction_bigrams",
+        "input_sheet": "key_all_trigrams",
         "item_column": "ngram",
-        "direct_output": "interaction_bigrams_direct",
-        "group_output": "interaction_bigrams_group",
-    },
-    {
-        "input_sheet": "key_content_trigrams",
-        "item_column": "ngram",
-        "direct_output": "content_trigrams_direct",
-        "group_output": "content_trigrams_group",
-    },
-    {
-        "input_sheet": "key_interaction_trigrams",
-        "item_column": "ngram",
-        "direct_output": "interaction_trigrams_direct",
-        "group_output": "interaction_trigrams_group",
+        "direct_output": "trigrams_direct",
+        "group_output": "trigrams_group",
     },
 ]
 
@@ -140,7 +132,6 @@ def create_review_table(
     For direction='group':
         sort by signed_log_likelihood ascending.
     """
-
     required_columns = {
         item_column,
         "direction",
@@ -181,16 +172,13 @@ def create_review_table(
         col for col in REVIEW_COLUMNS_BASE if col in review_df.columns
     ]
 
-    review_df = review_df[review_columns]
-
-    return review_df
+    return review_df[review_columns]
 
 
 def read_keyness_sheet(input_file: Path, sheet_name: str) -> pd.DataFrame:
     """
     Read one keyness sheet from the keyness workbook.
     """
-
     try:
         return pd.read_excel(input_file, sheet_name=sheet_name)
     except ValueError as error:
@@ -209,7 +197,6 @@ def export_review_tables(
     """
     Export all review tables into one Excel workbook.
     """
-
     if not input_file.exists():
         raise FileNotFoundError(
             f"Input file not found: {input_file}\n"
@@ -288,9 +275,11 @@ def export_review_tables(
 # Command-line interface
 # ---------------------------------------------------------------------
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create compact review tables from keyness results."
+        description=(
+            "Create compact review tables from Direct-vs-Group keyness results."
+        )
     )
 
     parser.add_argument(
@@ -310,7 +299,17 @@ def main() -> None:
         ),
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+
+    if args.top_n < 1:
+        raise ValueError("--top-n must be at least 1.")
+
+    if args.min_total_count < 1:
+        raise ValueError("--min-total-count must be at least 1.")
 
     export_review_tables(
         input_file=INPUT_FILE,
@@ -319,6 +318,9 @@ def main() -> None:
         min_total_count=args.min_total_count,
     )
 
+    print("Done.")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
