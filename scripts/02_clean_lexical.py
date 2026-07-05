@@ -73,7 +73,7 @@ committed to a public repository.
 
 Project
 -------
-DocTalk chat corpus analysis / JMIR reproducibility pipeline
+DocTalk chat corpus analysis / reproducibility pipeline
 """
 
 from __future__ import annotations

@@ -1,58 +1,104 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Create lexical v2 tables for collocation analysis.
+07_create_clean_lexical_v2.py
 
-v2 changes:
+Purpose
+-------
+Create v2 cleaned lexical tables for targeted collocation and KWIC analyses.
+
+This script applies a small number of additional rule-based normalizations to
+the cleaned lexical corpus produced by:
+
+    scripts/02_clean_lexical.py
+
+v2 changes
+----------
 1. Normalize therapy group multiword expressions:
-   MT Gruppe -> MT_Gruppe
-   KT Gruppe -> KT_Gruppe
-   GT Gruppe -> GT_Gruppe
+
+       MT Gruppe -> MT_Gruppe
+       KT Gruppe -> KT_Gruppe
+       GT Gruppe -> GT_Gruppe
 
 2. Normalize explicit no-task status expressions:
-   kein aktives Todo -> kein_Todo
-   kein aktuelles Todo -> kein_Todo
-   kein_aktives_Todo -> kein_Todo
+
+       kein aktives Todo -> kein_Todo
+       kein aktuelles Todo -> kein_Todo
+       kein_aktives_Todo -> kein_Todo
 
 3. Normalize selected sentence-initial pronouns/function words:
-   Ich -> ich
-   Du -> du
-   Mir -> mir
-   etc.
 
-4. Create a content_text_v2 column with selected high-frequency German
-   function words removed for content-oriented collocation analysis.
+       Ich -> ich
+       Du -> du
+       Mir -> mir
+       etc.
 
-Inputs:
+No separate content-versus-interaction views are generated in the final
+pipeline. The v2 text column is used as the basis for targeted collocation
+and KWIC analyses.
+
+Inputs
+------
+Expected input files:
+
     outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical.csv
     outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical.csv
 
-Outputs:
+Outputs
+-------
+Confidential message-level outputs:
+
     outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
     outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv
     outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv
+
+Aggregated public validation output:
+
     outputs/public/tables/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx
 
-Usage from project root:
+Usage
+-----
+Run from the project root directory:
+
     python scripts/07_create_clean_lexical_v2.py
+
+Confidentiality
+---------------
+The cleaned v2 utterance tables still contain message-level text and are
+therefore written to outputs/confidential/. The marker presence check contains
+aggregated counts only and is written to outputs/public/.
 """
 
-from pathlib import Path
+from __future__ import annotations
+
 import re
+from pathlib import Path
+
 import pandas as pd
 
 
-PROJECT_DIR = Path.cwd()
+PROJECT_DIR = Path(__file__).resolve().parents[1]
 
-DIRECT_IN = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical.csv"
-GROUP_IN = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical.csv"
+INPUT_DIR = PROJECT_DIR / "outputs" / "confidential" / "cleaned_corpus_tables"
 
-DIRECT_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv"
-GROUP_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv"
+DIRECT_IN = INPUT_DIR / "D_utterances_clean_lexical.csv"
+GROUP_IN = INPUT_DIR / "G_utterances_clean_lexical.csv"
 
-COMBINED_OUT = PROJECT_DIR / "outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv"
-MARKER_OUT = PROJECT_DIR / "outputs/public/tables/collocations_v2/marker_presence_check_clean_lexical_v2.xlsx"
+DIRECT_OUT = INPUT_DIR / "D_utterances_clean_lexical_v2.csv"
+GROUP_OUT = INPUT_DIR / "G_utterances_clean_lexical_v2.csv"
+COMBINED_OUT = INPUT_DIR / "utterances_for_collocation_clean_lexical_v2.csv"
+
+MARKER_OUT = (
+    PROJECT_DIR
+    / "outputs"
+    / "public"
+    / "tables"
+    / "collocations_v2"
+    / "marker_presence_check_clean_lexical_v2.xlsx"
+)
 
 TEXT_COL = "text_clean_lexical"
+V2_TEXT_COL = "text_clean_lexical_v2"
 
 
 # -----------------------------------------------------------------------------
@@ -64,6 +110,7 @@ THERAPY_GROUP_RULES = [
     (r"\bKT\s+Gruppe\b", "KT_Gruppe"),
     (r"\bGT\s+Gruppe\b", "GT_Gruppe"),
 ]
+
 
 TODO_STATUS_RULES = [
     # Hashtag artefact variants, e.g. original "#kein to do"
@@ -83,6 +130,7 @@ TODO_STATUS_RULES = [
     (r"\bkein\s+aktuelles\s+ToDo\b", "kein_Todo"),
 ]
 
+
 CASE_NORMALIZATION_RULES = [
     # Selected sentence-initial pronouns/function words.
     # Do not lowercase the full text because protected markers must remain stable.
@@ -96,27 +144,6 @@ CASE_NORMALIZATION_RULES = [
     (r"\bUns\b", "uns"),
     (r"\bSich\b", "sich"),
 ]
-
-
-# Conservative German/function-word stoplist for content-oriented collocation.
-# Interactionally relevant words such as ich/du/mir are removed from content_text_v2,
-# but preserved in interaction_text_v2.
-CONTENT_STOPWORDS = {
-    "der", "die", "das",
-    "den", "dem", "des",
-    "ein", "eine", "einer", "einem", "einen", "eines",
-    "und", "oder", "aber",
-    "in", "im", "am", "an", "auf", "aus", "bei", "mit", "nach", "von", "vor", "zu", "zur", "zum",
-    "für", "über", "unter", "zwischen",
-    "ist", "sind", "war", "waren", "wird", "werden", "wurde", "wurden",
-    "hat", "haben", "hatte", "hatten",
-    "sein", "gewesen",
-    "es", "er", "sie", "wir", "ihr",
-    "ich", "du", "mir", "mich", "dir", "dich", "uns", "sich",
-    "da", "dann", "noch", "auch", "schon", "nur", "so", "mal",
-    "wie", "was", "wer", "wo", "wann",
-    "dass", "wenn", "weil", "als",
-}
 
 
 MARKERS_TO_CHECK = [
@@ -143,10 +170,14 @@ MARKERS_TO_CHECK = [
 ]
 
 
-def safe_text(x):
-    if pd.isna(x):
+def safe_text(value: object) -> str:
+    """
+    Convert missing values to empty strings and all other values to strings.
+    """
+    if pd.isna(value):
         return ""
-    return str(x)
+
+    return str(value)
 
 
 def normalize_therapy_groups(text: str) -> str:
@@ -154,8 +185,10 @@ def normalize_therapy_groups(text: str) -> str:
     Normalize recurrent therapy group multiword expressions.
     """
     text = safe_text(text)
+
     for pattern, replacement in THERAPY_GROUP_RULES:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
     return text
 
 
@@ -167,83 +200,79 @@ def normalize_todo_status(text: str) -> str:
     therefore mapped to the established marker kein_Todo.
     """
     text = safe_text(text)
+
     for pattern, replacement in TODO_STATUS_RULES:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
     return text
 
 
 def normalize_case_selected(text: str) -> str:
     """
-    Normalize selected sentence-initial function words/pronouns without lowercasing
-    protected markers such as PatName, KolName, WE, ÖGD, MT_Gruppe.
+    Normalize selected sentence-initial function words/pronouns without
+    lowercasing protected markers such as PatName, KolName, WE, ÖGD,
+    or MT_Gruppe.
     """
     text = safe_text(text)
+
     for pattern, replacement in CASE_NORMALIZATION_RULES:
         text = re.sub(pattern, replacement, text)
+
     return text
 
 
-def remove_content_stopwords(text: str) -> str:
+def create_v2_text(text: str) -> str:
     """
-    Token-based removal.
-    Keeps protected markers with underscores and clinical abbreviations.
+    Apply all v2 normalization steps to one cleaned lexical text.
     """
-    text = safe_text(text)
-    tokens = text.split()
-    kept = []
+    text = normalize_therapy_groups(text)
+    text = normalize_todo_status(text)
+    text = normalize_case_selected(text)
 
-    for tok in tokens:
-        # Strip punctuation only for stopword comparison, but keep original token if retained.
-        comparable = tok.strip(".,;:!?()[]{}\"'„“”").lower()
-
-        if comparable in CONTENT_STOPWORDS:
-            continue
-
-        kept.append(tok)
-
-    return " ".join(kept)
+    return " ".join(text.split())
 
 
-def add_v2_columns(df: pd.DataFrame, direction: str) -> pd.DataFrame:
+def add_v2_columns(df: pd.DataFrame, corpus: str) -> pd.DataFrame:
+    """
+    Add v2 lexical text and corpus label to one utterance table.
+    """
     df = df.copy()
-    df["direction"] = direction
+    df["direction"] = corpus
+    # "direction" is used throughout the pipeline as the Direct-vs-Group
+    # corpus/modality label.
 
     if TEXT_COL not in df.columns:
-        raise ValueError(f"Required column not found: {TEXT_COL}. Available columns: {df.columns.tolist()}")
+        raise ValueError(
+            f"Required column not found: {TEXT_COL}. "
+            f"Available columns: {df.columns.tolist()}"
+        )
 
-    df["text_clean_lexical_v2"] = (
-        df[TEXT_COL]
-        .apply(normalize_therapy_groups)
-        .apply(normalize_todo_status)
-        .apply(normalize_case_selected)
-    )
-
-    # Content view: MWE normalization + no-task normalization + selected case normalization
-    # + stopword removal.
-    df["content_text_v2"] = df["text_clean_lexical_v2"].apply(remove_content_stopwords)
-
-    # Interaction view for now: v2 normalization only, without content stopword removal.
-    # This preserves interactionally relevant words such as ich, du, bitte, danke, hallo, liebe.
-    df["interaction_text_v2"] = df["text_clean_lexical_v2"]
+    df[V2_TEXT_COL] = df[TEXT_COL].apply(create_v2_text)
 
     return df
 
 
 def count_marker(text: str, marker: str) -> int:
+    """
+    Count exact token-like occurrences of one marker.
+    """
     text = safe_text(text)
-
-    # Exact token-ish match; underscores and umlauts are preserved.
     pattern = rf"(?<!\w){re.escape(marker)}(?!\w)"
+
     return len(re.findall(pattern, text))
 
 
 def marker_presence_check(df: pd.DataFrame, text_col: str) -> pd.DataFrame:
+    """
+    Count selected markers in one text column.
+    """
     rows = []
 
     for marker in MARKERS_TO_CHECK:
         counts = df[text_col].apply(lambda x: count_marker(x, marker))
         rows.append(
             {
+                "text_column": text_col,
                 "marker": marker,
                 "messages_with_marker": int((counts > 0).sum()),
                 "total_occurrences": int(counts.sum()),
@@ -253,39 +282,50 @@ def marker_presence_check(df: pd.DataFrame, text_col: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def main():
-    if not DIRECT_IN.exists():
-        raise FileNotFoundError(f"Direct input not found: {DIRECT_IN}")
-    if not GROUP_IN.exists():
-        raise FileNotFoundError(f"Group input not found: {GROUP_IN}")
+def read_input_table(path: Path, label: str) -> pd.DataFrame:
+    """
+    Read one cleaned lexical input table.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"{label} input not found: {path}")
 
-    d = pd.read_csv(DIRECT_IN)
-    g = pd.read_csv(GROUP_IN)
+    return pd.read_csv(path)
 
-    print("Loaded Direct:", d.shape)
-    print("Loaded Group:", g.shape)
 
-    d_v2 = add_v2_columns(d, "direct")
-    g_v2 = add_v2_columns(g, "group")
+def main() -> int:
+    direct_df = read_input_table(DIRECT_IN, "Direct")
+    group_df = read_input_table(GROUP_IN, "Group")
+
+    print("Loaded Direct:", direct_df.shape)
+    print("Loaded Group:", group_df.shape)
+
+    direct_v2 = add_v2_columns(direct_df, "direct")
+    group_v2 = add_v2_columns(group_df, "group")
 
     DIRECT_OUT.parent.mkdir(parents=True, exist_ok=True)
-    GROUP_OUT.parent.mkdir(parents=True, exist_ok=True)
 
-    d_v2.to_csv(DIRECT_OUT, index=False)
-    g_v2.to_csv(GROUP_OUT, index=False)
+    direct_v2.to_csv(DIRECT_OUT, index=False, encoding="utf-8")
+    group_v2.to_csv(GROUP_OUT, index=False, encoding="utf-8")
 
-    combined = pd.concat([d_v2, g_v2], ignore_index=True, sort=False)
-    combined.to_csv(COMBINED_OUT, index=False)
+    combined = pd.concat([direct_v2, group_v2], ignore_index=True, sort=False)
+    combined.to_csv(COMBINED_OUT, index=False, encoding="utf-8")
 
-    marker_original = marker_presence_check(combined, "text_clean_lexical")
-    marker_v2 = marker_presence_check(combined, "text_clean_lexical_v2")
-    marker_content_v2 = marker_presence_check(combined, "content_text_v2")
+    marker_original = marker_presence_check(combined, TEXT_COL)
+    marker_v2 = marker_presence_check(combined, V2_TEXT_COL)
 
     MARKER_OUT.parent.mkdir(parents=True, exist_ok=True)
+
     with pd.ExcelWriter(MARKER_OUT, engine="openpyxl") as writer:
-        marker_original.to_excel(writer, sheet_name="original_clean_lexical", index=False)
-        marker_v2.to_excel(writer, sheet_name="text_clean_lexical_v2", index=False)
-        marker_content_v2.to_excel(writer, sheet_name="content_text_v2", index=False)
+        marker_original.to_excel(
+            writer,
+            sheet_name="text_clean_lexical",
+            index=False,
+        )
+        marker_v2.to_excel(
+            writer,
+            sheet_name="text_clean_lexical_v2",
+            index=False,
+        )
 
     print("Saved:")
     print(" -", DIRECT_OUT)
@@ -296,6 +336,8 @@ def main():
     print("\nMarker check v2:")
     print(marker_v2)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

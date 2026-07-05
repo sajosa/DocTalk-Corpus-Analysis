@@ -35,7 +35,7 @@ def main():
     print("Columns:", df.columns.tolist())
 
     # Put group before direct because group-specific handover/status patterns
-    # are central for the JMIR result table.
+    # and documentation patterns, while preserving direct-message patterns.
     direction_order = {
         "group": 0,
         "direct": 1,

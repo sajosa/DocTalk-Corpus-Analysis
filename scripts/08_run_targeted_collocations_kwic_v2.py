@@ -5,14 +5,14 @@ Purpose
 -------
 Use this script after keyness analysis to examine the local lexical neighbourhoods
 of selected core-result/keyness items. It is designed for an utterance-level table
-with Direct and Group messages and optional Content/Interaction views.
+with Direct and Group messages and one cleaned lexical v2 text column.
 
 Expected input
 --------------
 A pandas DataFrame or CSV/XLSX with at least:
 - one row per utterance/message
 - a modality column, e.g. direction = "direct" or "group"
-- one or two cleaned text columns, e.g. content_text and interaction_text
+- one cleaned text column, e.g. text_clean_lexical_v2
 - optional metadata columns, e.g. conversation_id, utterance_id, speaker, timestamp
 
 Recommended defaults
@@ -28,8 +28,7 @@ python scripts/08_run_targeted_collocations_kwic_v2.py \
   --utterances outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv \
   --keyness-xlsx outputs/public/tables/keyness_review_top_items.xlsx \
   --out-dir outputs/confidential/review_files/collocations_v2 \
-  --content-col content_text_v2 \
-  --interaction-col interaction_text_v2 \
+  --text-col text_clean_lexical_v2 \
   --window-size 5 \
   --min-freq 3
 
@@ -275,7 +274,7 @@ def make_interpretation_note(anchor: str, collocate: str, direction: str, view: 
 
 
 # -----------------------------------------------------------------------------
-# 3) Optional anchor extraction from the condensed JMIR keyness table
+# 3) Optional anchor extraction from the condensed keyness table
 # -----------------------------------------------------------------------------
 
 
@@ -330,8 +329,7 @@ class CollocationConfig:
         if self.text_cols is not None:
             return self.text_cols
         return {
-            "content": "content_text",
-            "interaction": "interaction_text",
+            "lexical": "text_clean_lexical_v2",
         }
 
 
@@ -816,12 +814,10 @@ def _write_outputs(
 
 def _find_default_keyness_file(project_dir: Path) -> Path | None:
     """
-    Try common locations for the condensed JMIR keyness table.
+    Try common locations for the condensed keyness table.
     Returns None if no file is found.
     """
     candidates = [
-        project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
-        project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
         project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
         project_dir / "keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
     ]
@@ -863,7 +859,7 @@ def parse_cli_args() -> argparse.Namespace:
         "--keyness-xlsx",
         type=Path,
         default=None,
-        help="Optional condensed JMIR keyness table. If omitted, common default locations are checked.",
+        help="Optional condensed keyness table. If omitted, common default locations are checked.",
     )
 
     parser.add_argument(
@@ -873,23 +869,10 @@ def parse_cli_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--content-col",
+        "--text-col",
         type=str,
-        default="content_text_v2",
-        help="Column for the content view. Default: content_text.",
-    )
-
-    parser.add_argument(
-        "--interaction-col",
-        type=str,
-        default="interaction_text_v2",
-        help="Column for the interaction view. Default: interaction_text.",
-    )
-
-    parser.add_argument(
-        "--include-interaction-view",
-        action="store_true",
-        help="Also analyze interaction_text. Use only if it is a genuinely separate interaction view.",
+        default="text_clean_lexical_v2",
+        help="Cleaned lexical v2 text column to analyze. Default: text_clean_lexical_v2.",
     )
 
     parser.add_argument(
@@ -960,24 +943,17 @@ def main_cli() -> int:
     print("Columns:")
     print(utterances.columns.tolist())
 
-    required_cols = ["direction", args.content_col]
+    required_cols = ["direction", args.text_col]
     missing = [col for col in required_cols if col not in utterances.columns]
     if missing:
         print("\nERROR:")
         print(f"Missing required columns: {missing}")
         return 1
 
-    text_cols = {"content": args.content_col}
+    text_cols = {"lexical": args.text_col}
 
-    if args.include_interaction_view:
-        if args.interaction_col not in utterances.columns:
-            print("\nERROR:")
-            print(f"Interaction column not found: {args.interaction_col}")
-            return 1
-        text_cols["interaction"] = args.interaction_col
-    else:
-        print("\nInteraction view is not analyzed in this run.")
-        print("Reason: content_text and interaction_text are currently identical unless separate view-specific stopwording has been applied.")
+    print("\nAnalyzing lexical v2 text only.")
+    print("No separate content-versus-interaction views are used in the final pipeline.")
 
     anchors = set(DEFAULT_ANCHORS)
 
@@ -1077,5 +1053,4 @@ def main_cli() -> int:
 
 
 if __name__ == "__main__":
-    import argparse
     sys.exit(main_cli())
