@@ -44,7 +44,7 @@ ENV/
 
 # VS Code settings may be tracked intentionally.
 # Uncomment the next line only if local VS Code settings should be excluded.
-# .vscode/
+.vscode/
 
 
 # ------------------------------------------------------------
@@ -102,4 +102,3 @@ project_tree*.txt
 # ------------------------------------------------------------
 *.loghelp.md
 help.md
-.DS_Store
