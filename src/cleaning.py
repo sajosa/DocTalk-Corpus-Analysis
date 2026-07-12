@@ -59,7 +59,7 @@ def normalize_gender_specific_compounds(text: str) -> str:
 
     # Project-related user meeting format.
     # Not clinically content-relevant; can later be removed in the
-    # content-token view via stopwords.
+    # downstream lexical analyses where project-specific filtering is applied.
     text = re.sub(
         r"\bNutzer\s*[:*/_]\s*innentreffen\b",
         " Projekt_Nutzertreffen ",

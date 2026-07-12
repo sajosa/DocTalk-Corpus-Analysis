@@ -12,7 +12,7 @@ in the cleaned lexical corpus.
 This helps decide whether "kein" is:
 - part of a missed kein_Todo pattern
 - a meaningful negation that should be retained
-- a low-information token that can be moved to stopwords
+- a low-information token that may be excluded from interpretation in downstream analyses
 
 Output
 ------
