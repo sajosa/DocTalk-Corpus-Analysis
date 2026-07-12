@@ -395,7 +395,7 @@ def main() -> None:
     plot_thread_size_distribution(
         direct_dist=direct_dist,
         group_dist=group_dist,
-        out_base=figures_dir / "combined_direct_group_utterance_count_categories_horizontal_jmir",
+        out_base=figures_dir / "combined_direct_group_utterance_count_categories_horizontal_bar",
         dpi=args.dpi,
         with_internal_titles=args.with_internal_titles,
     )
@@ -410,7 +410,7 @@ def main() -> None:
     plot_weekday_hour_heatmaps(
         direct_pct=direct_pct,
         group_pct=group_pct,
-        out_base=figures_dir / "time" / "combined_direct_group_weekday_hour_heatmap_jmir",
+        out_base=figures_dir / "time" / "combined_direct_group_weekday_hour_heatmap",
         dpi=args.dpi,
         heatmap_vmax=args.heatmap_vmax,
     )

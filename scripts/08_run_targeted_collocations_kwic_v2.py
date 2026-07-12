@@ -818,8 +818,8 @@ def _find_default_keyness_file(project_dir: Path) -> Path | None:
     Returns None if no file is found.
     """
     candidates = [
-        project_dir / "outputs/public/tables/keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
-        project_dir / "keyness_condensed_results_table_JMIR_updated_SJ.xlsx",
+        project_dir / "outputs/public/tables/keyness_condensed_results_table_updated_SJ.xlsx",
+        project_dir / "keyness_condensed_results_table_updated_SJ.xlsx",
     ]
 
     for path in candidates:
