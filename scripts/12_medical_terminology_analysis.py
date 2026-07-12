@@ -3,12 +3,12 @@
 """
 12_medical_terminology_analysis.py
 
-Model-based discovery of clinical entities in the DocTalk corpus.
+Model-supported extraction of candidate clinical entity mentions in the DocTalk corpus.
 
 Purpose
 -------
-This script provides an open-source model-based extraction of candidate diagnoses, symptoms, medications,
-procedures/tests and treatments from German clinical chat messages.
+This script provides an open-source model-supported extraction of candidate clinical entity mentions,
+including diagnoses, symptoms, medications, procedures/tests and treatments, from German clinical chat messages.
 
 The script deliberately treats all model outputs as CANDIDATES requiring manual
 review. It does not infer disease prevalence or treatment prevalence among patients.
@@ -18,9 +18,8 @@ Recommended first run
 ---------------------
 python scripts/12_medical_terminology_analysis.py \
   --corpus both \
-  --backend all \
-  --min_score 0.50 \
-  --include_full_message
+  --backend humadex_medner \
+  --min_score 0.50
 
 Install dependencies
 --------------------
@@ -28,6 +27,12 @@ pip install pandas openpyxl tqdm transformers torch
 
 Optional for GLiNER zero-shot NER:
 pip install gliner
+
+Optional GLiNER run:
+python scripts/12_medical_terminology_analysis.py \
+  --corpus both \
+  --backend gliner \
+  --gliner_threshold 0.35
 
 Backends
 --------
@@ -57,6 +62,8 @@ outputs/confidential/review_files/medical_terminology_model/
 Notes
 -----
 - The first run downloads open-source models from Hugging Face. Inference is local.
+- No message text is intentionally sent to an external API by this script.
+- Outputs may contain original message snippets or full messages if --include_full_message is used and must remain confidential.
 - Chat messages are short, elliptical, anonymized and domain-specific; therefore manual
   validation is essential.
 - For publication, report this as model-supported candidate extraction with manual review,
@@ -69,10 +76,9 @@ import argparse
 import json
 import logging
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from tqdm import tqdm
@@ -172,7 +178,10 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Open-source model-based discovery of diagnoses and medications in German clinical chat corpus."
+        description=(
+            "Open-source model-supported extraction of candidate clinical entity "
+            "mentions in German clinical chat messages."
+        )
     )
     parser.add_argument("--project_root", default=".", help="Project root directory. Default: current directory.")
     parser.add_argument("--direct_path", default=DEFAULT_DIRECT_PATH, help="Path to cleaned direct-message CSV.")
@@ -578,7 +587,7 @@ def write_outputs(
         else pd.DataFrame()
     )
 
-    excel_path = output_dir / "model_entity_candidates_for_review.xlsx"
+    excel_path = output_dir / "model_entity_candidates_for_review_SJ.xlsx"
     with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
         readme.to_excel(writer, sheet_name="README", index=False)
         summary_by_type.to_excel(writer, sheet_name="summary_by_type", index=False)
