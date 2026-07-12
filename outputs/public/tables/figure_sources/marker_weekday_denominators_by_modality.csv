@@ -1,0 +1,15 @@
+direction,message_type,weekday,weekday_label,message_count
+direct,Direct messages,0,Mon,1045
+direct,Direct messages,1,Tue,1006
+direct,Direct messages,2,Wed,1058
+direct,Direct messages,3,Thu,976
+direct,Direct messages,4,Fri,783
+direct,Direct messages,5,Sat,33
+direct,Direct messages,6,Sun,14
+group,Group messages,0,Mon,361
+group,Group messages,1,Tue,387
+group,Group messages,2,Wed,514
+group,Group messages,3,Thu,557
+group,Group messages,4,Fri,631
+group,Group messages,5,Sat,76
+group,Group messages,6,Sun,21

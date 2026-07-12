@@ -1,0 +1,36 @@
+marker,display_label,weekday,weekday_label,messages_with_marker,message_denominator,message_share_percent
+Übergabe,Handover,0,Mon,27,1406,1.9203413940256047
+Übergabe,Handover,1,Tue,9,1393,0.6460875807609476
+Übergabe,Handover,2,Wed,31,1572,1.9720101781170483
+Übergabe,Handover,3,Thu,46,1533,3.0006523157208087
+Übergabe,Handover,4,Fri,121,1414,8.557284299858557
+Übergabe,Handover,5,Sat,24,109,22.018348623853214
+Übergabe,Handover,6,Sun,5,35,14.285714285714285
+WE,Weekend preparation,0,Mon,3,1406,0.21337126600284498
+WE,Weekend preparation,1,Tue,2,1393,0.14357501794687724
+WE,Weekend preparation,2,Wed,2,1572,0.1272264631043257
+WE,Weekend preparation,3,Thu,8,1533,0.5218525766470972
+WE,Weekend preparation,4,Fri,74,1414,5.233380480905233
+WE,Weekend preparation,5,Sat,7,109,6.422018348623854
+WE,Weekend preparation,6,Sun,1,35,2.857142857142857
+kein_Todo,No active to-do,0,Mon,0,1406,0.0
+kein_Todo,No active to-do,1,Tue,0,1393,0.0
+kein_Todo,No active to-do,2,Wed,4,1572,0.2544529262086514
+kein_Todo,No active to-do,3,Thu,8,1533,0.5218525766470972
+kein_Todo,No active to-do,4,Fri,228,1414,16.124469589816123
+kein_Todo,No active to-do,5,Sat,10,109,9.174311926605505
+kein_Todo,No active to-do,6,Sun,0,35,0.0
+Rückmeldung,Feedback / status,0,Mon,44,1406,3.1294452347083923
+Rückmeldung,Feedback / status,1,Tue,56,1393,4.0201005025125625
+Rückmeldung,Feedback / status,2,Wed,63,1572,4.007633587786259
+Rückmeldung,Feedback / status,3,Thu,49,1533,3.1963470319634704
+Rückmeldung,Feedback / status,4,Fri,29,1414,2.050919377652051
+Rückmeldung,Feedback / status,5,Sat,1,109,0.9174311926605505
+Rückmeldung,Feedback / status,6,Sun,1,35,2.857142857142857
+anwesend,Attendance,0,Mon,40,1406,2.844950213371266
+anwesend,Attendance,1,Tue,46,1393,3.3022254127781765
+anwesend,Attendance,2,Wed,35,1572,2.2264631043257
+anwesend,Attendance,3,Thu,35,1533,2.28310502283105
+anwesend,Attendance,4,Fri,25,1414,1.768033946251768
+anwesend,Attendance,5,Sat,0,109,0.0
+anwesend,Attendance,6,Sun,0,35,0.0

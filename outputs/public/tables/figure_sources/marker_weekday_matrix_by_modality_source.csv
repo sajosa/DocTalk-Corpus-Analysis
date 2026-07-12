@@ -1,0 +1,71 @@
+direction,message_type,marker,display_label,weekday,weekday_label,messages_with_marker,message_denominator,message_share_percent
+direct,Direct messages,Übergabe,Weekend handover,0,Mon,15,1045,1.4354066985645932
+direct,Direct messages,Übergabe,Weekend handover,1,Tue,4,1006,0.3976143141153081
+direct,Direct messages,Übergabe,Weekend handover,2,Wed,16,1058,1.5122873345935728
+direct,Direct messages,Übergabe,Weekend handover,3,Thu,11,976,1.1270491803278688
+direct,Direct messages,Übergabe,Weekend handover,4,Fri,16,783,2.0434227330779056
+direct,Direct messages,Übergabe,Weekend handover,5,Sat,1,33,3.0303030303030303
+direct,Direct messages,Übergabe,Weekend handover,6,Sun,1,14,7.142857142857142
+direct,Direct messages,WE,Weekend preparation,0,Mon,2,1045,0.19138755980861244
+direct,Direct messages,WE,Weekend preparation,1,Tue,1,1006,0.09940357852882703
+direct,Direct messages,WE,Weekend preparation,2,Wed,1,1058,0.0945179584120983
+direct,Direct messages,WE,Weekend preparation,3,Thu,1,976,0.10245901639344263
+direct,Direct messages,WE,Weekend preparation,4,Fri,1,783,0.1277139208173691
+direct,Direct messages,WE,Weekend preparation,5,Sat,0,33,0.0
+direct,Direct messages,WE,Weekend preparation,6,Sun,0,14,0.0
+direct,Direct messages,kein_Todo,No active to-do,0,Mon,0,1045,0.0
+direct,Direct messages,kein_Todo,No active to-do,1,Tue,0,1006,0.0
+direct,Direct messages,kein_Todo,No active to-do,2,Wed,2,1058,0.1890359168241966
+direct,Direct messages,kein_Todo,No active to-do,3,Thu,0,976,0.0
+direct,Direct messages,kein_Todo,No active to-do,4,Fri,3,783,0.38314176245210724
+direct,Direct messages,kein_Todo,No active to-do,5,Sat,0,33,0.0
+direct,Direct messages,kein_Todo,No active to-do,6,Sun,0,14,0.0
+direct,Direct messages,Rückmeldung,Therapy group feedback,0,Mon,2,1045,0.19138755980861244
+direct,Direct messages,Rückmeldung,Therapy group feedback,1,Tue,6,1006,0.5964214711729622
+direct,Direct messages,Rückmeldung,Therapy group feedback,2,Wed,10,1058,0.945179584120983
+direct,Direct messages,Rückmeldung,Therapy group feedback,3,Thu,6,976,0.6147540983606558
+direct,Direct messages,Rückmeldung,Therapy group feedback,4,Fri,5,783,0.6385696040868455
+direct,Direct messages,Rückmeldung,Therapy group feedback,5,Sat,0,33,0.0
+direct,Direct messages,Rückmeldung,Therapy group feedback,6,Sun,0,14,0.0
+direct,Direct messages,anwesend,Therapy group attendance,0,Mon,0,1045,0.0
+direct,Direct messages,anwesend,Therapy group attendance,1,Tue,1,1006,0.09940357852882703
+direct,Direct messages,anwesend,Therapy group attendance,2,Wed,4,1058,0.3780718336483932
+direct,Direct messages,anwesend,Therapy group attendance,3,Thu,1,976,0.10245901639344263
+direct,Direct messages,anwesend,Therapy group attendance,4,Fri,0,783,0.0
+direct,Direct messages,anwesend,Therapy group attendance,5,Sat,0,33,0.0
+direct,Direct messages,anwesend,Therapy group attendance,6,Sun,0,14,0.0
+group,Group messages,Übergabe,Weekend handover,0,Mon,12,361,3.32409972299169
+group,Group messages,Übergabe,Weekend handover,1,Tue,5,387,1.2919896640826873
+group,Group messages,Übergabe,Weekend handover,2,Wed,15,514,2.9182879377431905
+group,Group messages,Übergabe,Weekend handover,3,Thu,35,557,6.283662477558348
+group,Group messages,Übergabe,Weekend handover,4,Fri,105,631,16.64025356576862
+group,Group messages,Übergabe,Weekend handover,5,Sat,23,76,30.263157894736842
+group,Group messages,Übergabe,Weekend handover,6,Sun,4,21,19.047619047619047
+group,Group messages,WE,Weekend preparation,0,Mon,1,361,0.2770083102493075
+group,Group messages,WE,Weekend preparation,1,Tue,1,387,0.2583979328165375
+group,Group messages,WE,Weekend preparation,2,Wed,1,514,0.19455252918287938
+group,Group messages,WE,Weekend preparation,3,Thu,7,557,1.2567324955116697
+group,Group messages,WE,Weekend preparation,4,Fri,73,631,11.568938193343898
+group,Group messages,WE,Weekend preparation,5,Sat,7,76,9.210526315789473
+group,Group messages,WE,Weekend preparation,6,Sun,1,21,4.761904761904762
+group,Group messages,kein_Todo,No active to-do,0,Mon,0,361,0.0
+group,Group messages,kein_Todo,No active to-do,1,Tue,0,387,0.0
+group,Group messages,kein_Todo,No active to-do,2,Wed,2,514,0.38910505836575876
+group,Group messages,kein_Todo,No active to-do,3,Thu,8,557,1.436265709156194
+group,Group messages,kein_Todo,No active to-do,4,Fri,225,631,35.657686212361334
+group,Group messages,kein_Todo,No active to-do,5,Sat,10,76,13.157894736842104
+group,Group messages,kein_Todo,No active to-do,6,Sun,0,21,0.0
+group,Group messages,Rückmeldung,Therapy group feedback,0,Mon,42,361,11.634349030470915
+group,Group messages,Rückmeldung,Therapy group feedback,1,Tue,50,387,12.919896640826872
+group,Group messages,Rückmeldung,Therapy group feedback,2,Wed,53,514,10.311284046692606
+group,Group messages,Rückmeldung,Therapy group feedback,3,Thu,43,557,7.719928186714542
+group,Group messages,Rückmeldung,Therapy group feedback,4,Fri,24,631,3.8034865293185423
+group,Group messages,Rückmeldung,Therapy group feedback,5,Sat,1,76,1.3157894736842104
+group,Group messages,Rückmeldung,Therapy group feedback,6,Sun,1,21,4.761904761904762
+group,Group messages,anwesend,Therapy group attendance,0,Mon,40,361,11.080332409972298
+group,Group messages,anwesend,Therapy group attendance,1,Tue,45,387,11.627906976744185
+group,Group messages,anwesend,Therapy group attendance,2,Wed,31,514,6.031128404669261
+group,Group messages,anwesend,Therapy group attendance,3,Thu,34,557,6.104129263913824
+group,Group messages,anwesend,Therapy group attendance,4,Fri,25,631,3.9619651347068143
+group,Group messages,anwesend,Therapy group attendance,5,Sat,0,76,0.0
+group,Group messages,anwesend,Therapy group attendance,6,Sun,0,21,0.0
