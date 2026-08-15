@@ -2,29 +2,30 @@
 # -*- coding: utf-8 -*-
 
 """
-Generate publication-ready figures for the DocTalk corpus analysis.
+16_generate_thread_length_figure.py
 
-Figures
--------
-1) Utterance-count distribution by message type
-2) Weekday-hour heatmap by message type
+Generate the publication-ready thread-length distribution figure for the
+DocTalk corpus.
+
+The script is intentionally single-purpose: it creates Figure 1 only.
+It does not generate temporal heatmaps, avoiding overlap with the dedicated
+time-analysis script.
 
 Inputs
 ------
-outputs/confidential/dataframes/D_utterances_raw.csv
-outputs/confidential/dataframes/G_utterances_raw.csv
+outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
+outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv
 
 Outputs
 -------
 outputs/public/figures/
-outputs/public/tables/figure_sources/
+outputs/public/tables/figure_sources/thread_size_distribution_table.csv
 
-workflow
--------
-no title : python scripts/16_generate_figures.py 2>&1 | tee audit/logs/16_generate_figures.log
-with title : python scripts/16_generate_figures.py --with-internal-titles 2>&1 | tee audit/logs/16_generate_figures.log
-
+The final corpus is expected to contain:
+- 293 direct-message conversations
+- 86 group-message threads
 """
+
 
 from __future__ import annotations
 
@@ -34,13 +35,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 
-
-WEEKDAY_ORDER = [
-    "Monday", "Tuesday", "Wednesday", "Thursday",
-    "Friday", "Saturday", "Sunday"
-]
 
 THREAD_BINS = [
     ("1-5", 1, 5),
@@ -78,16 +73,16 @@ def set_publication_style() -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate publication-ready figures for the DocTalk corpus analysis."
+        description="Generate the publication-ready thread-length figure for the DocTalk corpus."
     )
     parser.add_argument("--project-root", default=".")
     parser.add_argument(
         "--direct-path",
-        default="outputs/confidential/dataframes/D_utterances_raw.csv",
+        default="outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv",
     )
     parser.add_argument(
         "--group-path",
-        default="outputs/confidential/dataframes/G_utterances_raw.csv",
+        default="outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv",
     )
     parser.add_argument(
         "--figures-dir",
@@ -103,12 +98,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Keep titles inside figures. Otherwise use captions in manuscript.",
     )
-    parser.add_argument(
-        "--heatmap-vmax",
-        type=float,
-        default=4.0,
-        help="Fixed maximum for heatmap color scale. Default: 4.0.",
-    )
     parser.add_argument("--no-source-tables", action="store_true")
     return parser.parse_args()
 
@@ -122,31 +111,6 @@ def load_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Input file not found: {path}")
     return pd.read_csv(path)
-
-
-def ensure_datetime_columns(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    if "timestamp" not in df.columns:
-        raise ValueError("Expected column 'timestamp' not found.")
-
-    if pd.api.types.is_numeric_dtype(df["timestamp"]):
-        df["timestamp_parsed"] = pd.to_datetime(
-            df["timestamp"], unit="s", errors="coerce"
-        )
-    else:
-        df["timestamp_parsed"] = pd.to_datetime(
-            df["timestamp"], errors="coerce"
-        )
-
-    df["hour"] = df["timestamp_parsed"].dt.hour
-
-    if "weekday" in df.columns:
-        df["weekday_clean"] = df["weekday"].astype(str).str.strip()
-    else:
-        df["weekday_clean"] = df["timestamp_parsed"].dt.day_name()
-
-    return df
 
 
 def thread_bin_label(n: int) -> str:
@@ -248,7 +212,7 @@ def plot_thread_size_distribution(
     ax.set_ylabel("Messages per thread")
 
     if with_internal_titles:
-        ax.set_title("Utterance-count distribution by message type", pad=12)
+        ax.set_title("Distribution of thread length by communication modality", pad=12)
 
     ax.grid(axis="x", color=GRID_COLOR, linewidth=0.7)
     ax.set_axisbelow(True)
@@ -270,90 +234,33 @@ def plot_thread_size_distribution(
     plt.close(fig)
 
 
-def build_weekday_hour_matrix(df: pd.DataFrame) -> pd.DataFrame:
-    df = ensure_datetime_columns(df)
-    tmp = df.dropna(subset=["hour"]).copy()
-    tmp["hour"] = tmp["hour"].astype(int)
-
-    matrix = pd.crosstab(tmp["weekday_clean"], tmp["hour"])
-    matrix = matrix.reindex(index=WEEKDAY_ORDER, fill_value=0)
-    matrix = matrix.reindex(columns=list(range(24)), fill_value=0)
-
-    total = matrix.to_numpy().sum()
-    if total == 0:
-        return matrix.astype(float)
-
-    return matrix / total * 100
-
-
-def plot_weekday_hour_heatmaps(
-    direct_pct: pd.DataFrame,
-    group_pct: pd.DataFrame,
-    out_base: Path,
-    dpi: int,
-    heatmap_vmax: float,
+def validate_final_thread_counts(
+    direct_dist: pd.DataFrame,
+    group_dist: pd.DataFrame,
+    expected_direct_threads: int = 293,
+    expected_group_threads: int = 86,
 ) -> None:
-    fig = plt.figure(figsize=(7.6, 5.6))
-    gs = GridSpec(
-        nrows=2,
-        ncols=2,
-        width_ratios=[32, 1.1],
-        height_ratios=[1, 1],
-        wspace=0.10,
-        hspace=0.23,
+    """Validate that Figure 1 is based on the locked final corpus structure."""
+    direct_total = int(direct_dist["n_threads"].sum())
+    group_total = int(group_dist["n_threads"].sum())
+
+    if direct_total != expected_direct_threads:
+        raise ValueError(
+            f"Unexpected number of direct-message conversations: {direct_total}. "
+            f"Expected {expected_direct_threads}."
+        )
+
+    if group_total != expected_group_threads:
+        raise ValueError(
+            f"Unexpected number of group-message threads: {group_total}. "
+            f"Expected {expected_group_threads}."
+        )
+
+    print(
+        "Final thread-count validation passed: "
+        f"{direct_total} direct-message conversations and "
+        f"{group_total} group-message threads."
     )
-
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[1, 0])
-    cax = fig.add_subplot(gs[:, 1])
-
-    im1 = ax1.imshow(
-        direct_pct.values,
-        aspect="auto",
-        cmap="Greys",
-        vmin=0,
-        vmax=heatmap_vmax,
-        interpolation="nearest",
-    )
-
-    im2 = ax2.imshow(
-        group_pct.values,
-        aspect="auto",
-        cmap="Greys",
-        vmin=0,
-        vmax=heatmap_vmax,
-        interpolation="nearest",
-    )
-
-    xticks = np.arange(0, 24, 2)
-    xticklabels = [f"{h:02d}:00" for h in xticks]
-
-    for ax in [ax1, ax2]:
-        ax.set_yticks(np.arange(len(WEEKDAY_ORDER)))
-        ax.set_yticklabels(WEEKDAY_ORDER)
-        ax.set_ylabel("Weekday")
-        ax.set_xticks(xticks)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-
-    ax1.set_xticklabels([])
-    ax2.set_xticklabels(xticklabels)
-    ax2.set_xlabel("Hour of day")
-
-    ax1.set_title("A. Direct messages", loc="left", pad=8)
-    ax2.set_title("B. Group messages", loc="left", pad=8)
-
-    cb = fig.colorbar(im2, cax=cax)
-    cb.set_label("Messages within each corpus (%)")
-    cb.ax.tick_params(labelsize=9.5)
-
-    fig.tight_layout()
-
-    out_base.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_base.with_suffix(".png"), dpi=dpi, bbox_inches="tight")
-    fig.savefig(out_base.with_suffix(".svg"), bbox_inches="tight")
-    fig.savefig(out_base.with_suffix(".pdf"), bbox_inches="tight")
-    plt.close(fig)
 
 
 def main() -> None:
@@ -367,7 +274,6 @@ def main() -> None:
     tables_dir = resolve_path(project_root, args.tables_dir)
 
     figures_dir.mkdir(parents=True, exist_ok=True)
-    (figures_dir / "time").mkdir(parents=True, exist_ok=True)
 
     if not args.no_source_tables:
         tables_dir.mkdir(parents=True, exist_ok=True)
@@ -380,41 +286,64 @@ def main() -> None:
     direct_df = load_csv(direct_path)
     group_df = load_csv(group_path)
 
+    required_column = "conversation_id"
+    for label, df in [("direct", direct_df), ("group", group_df)]:
+        if required_column not in df.columns:
+            raise ValueError(
+                f"Required column '{required_column}' missing from {label} input. "
+                f"Available columns: {df.columns.tolist()}"
+            )
+
     print(f"Loaded direct: {direct_df.shape}")
     print(f"Loaded group:  {group_df.shape}")
 
-    direct_dist = build_thread_size_distribution(direct_df, "direct")
-    group_dist = build_thread_size_distribution(group_df, "group")
+    direct_dist = build_thread_size_distribution(
+        direct_df,
+        "direct",
+    )
+    group_dist = build_thread_size_distribution(
+        group_df,
+        "group",
+    )
+
+    validate_final_thread_counts(
+        direct_dist,
+        group_dist,
+    )
 
     if not args.no_source_tables:
-        pd.concat([direct_dist, group_dist], ignore_index=True).to_csv(
-            tables_dir / "thread_size_distribution_table.csv",
-            index=False,
+        source_path = (
+            tables_dir
+            / "thread_size_distribution_table.csv"
         )
+        pd.concat(
+            [direct_dist, group_dist],
+            ignore_index=True,
+        ).to_csv(
+            source_path,
+            index=False,
+            encoding="utf-8",
+        )
+        print("Saved figure-source table:")
+        print(source_path)
+
+    out_base = (
+        figures_dir
+        / "combined_direct_group_thread_length_distribution"
+    )
 
     plot_thread_size_distribution(
         direct_dist=direct_dist,
         group_dist=group_dist,
-        out_base=figures_dir / "combined_direct_group_utterance_count_categories_horizontal_bar",
+        out_base=out_base,
         dpi=args.dpi,
         with_internal_titles=args.with_internal_titles,
     )
 
-    direct_pct = build_weekday_hour_matrix(direct_df)
-    group_pct = build_weekday_hour_matrix(group_df)
-
-    if not args.no_source_tables:
-        direct_pct.to_csv(tables_dir / "direct_weekday_hour_percentage_table.csv")
-        group_pct.to_csv(tables_dir / "group_weekday_hour_percentage_table.csv")
-
-    plot_weekday_hour_heatmaps(
-        direct_pct=direct_pct,
-        group_pct=group_pct,
-        out_base=figures_dir / "time" / "combined_direct_group_weekday_hour_heatmap",
-        dpi=args.dpi,
-        heatmap_vmax=args.heatmap_vmax,
-    )
-
+    print("Created Figure 1:")
+    print(out_base.with_suffix(".png"))
+    print(out_base.with_suffix(".svg"))
+    print(out_base.with_suffix(".pdf"))
     print("Done.")
 
 
