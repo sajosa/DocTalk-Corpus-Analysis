@@ -9,8 +9,8 @@ utterance CSV files produced by the pipeline. It does not use message text and
 therefore writes only aggregated, non-confidential outputs to outputs/public/.
 
 Default inputs:
-    outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical.csv
-    outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical.csv
+    outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
+    outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv
 
 Default outputs:
     outputs/public/tables/time/time_analysis_tables.xlsx
@@ -77,13 +77,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--direct-path",
         type=Path,
-        default=Path("outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical.csv"),
+        default=Path("outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv"),
         help="Path to cleaned direct-message CSV, relative to project dir or absolute.",
     )
     parser.add_argument(
         "--group-path",
         type=Path,
-        default=Path("outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical.csv"),
+        default=Path("outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv"),
         help="Path to cleaned group-message CSV, relative to project dir or absolute.",
     )
     parser.add_argument(
@@ -270,7 +270,7 @@ def save_figure(fig: plt.Figure, out_dir: Path, stem: str) -> None:
         "bbox_inches": "tight",
         "facecolor": "white",
     }
-    fig.savefig(out_dir / f"{stem}.png", dpi=300, **save_kwargs)
+    fig.savefig(out_dir / f"{stem}.png", dpi=600, **save_kwargs)
     fig.savefig(out_dir / f"{stem}.svg", **save_kwargs)
     fig.savefig(out_dir / f"{stem}.pdf", **save_kwargs)
     plt.close(fig)
@@ -321,7 +321,7 @@ def plot_hourly(hourly: pd.DataFrame, out_dir: Path) -> None:
 
     ax.set_title("Message distribution by hour of day", loc="left", fontweight="bold")
     ax.set_xlabel("Hour of day")
-    ax.set_ylabel("Messages within corpus (%)")
+    ax.set_ylabel("Share of modality-specific messages (%)")
     ax.set_xticks(range(0, 24, 2))
     ax.set_xlim(-0.5, 23.5)
     ax.legend(frameon=False)
@@ -358,7 +358,7 @@ def plot_weekday(weekday: pd.DataFrame, out_dir: Path) -> None:
 
     ax.set_title("Message distribution by weekday", loc="left", fontweight="bold")
     ax.set_xlabel("Weekday")
-    ax.set_ylabel("Messages within corpus (%)")
+    ax.set_ylabel("Share of modality-specific messages (%)")
     ax.set_xticks(x)
     ax.set_xticklabels(list(WEEKDAY_LABELS.values()), rotation=45, ha="right")
     ax.legend(frameon=False)
@@ -453,7 +453,11 @@ def plot_weekday_hour_heatmap(
             fraction=0.028,
             pad=0.025,
         )
-        cbar.set_label("Messages within corpus (%)", fontsize=9, color=EDGE_COLOR)
+        cbar.set_label(
+            "Share of modality-specific messages (%)",
+            fontsize=9,
+            color=EDGE_COLOR,
+        )
         cbar.ax.tick_params(labelsize=8, colors=EDGE_COLOR)
         cbar.outline.set_edgecolor(EDGE_COLOR)
 
@@ -496,11 +500,40 @@ def main() -> None:
         weekday.to_excel(writer, sheet_name="weekday_distribution", index=False)
         weekday_hour.to_excel(writer, sheet_name="weekday_hour_distribution", index=False)
 
+    # Always export the source table for the main weekday-hour heatmap.
+    # This table contains only aggregated, non-confidential values and makes
+    # the publication figure independently reproducible.
+    heatmap_source_path = (
+        out_tables_dir / "weekday_hour_distribution_by_modality.csv"
+    )
+    weekday_hour.to_csv(
+        heatmap_source_path,
+        index=False,
+        encoding="utf-8",
+    )
+
     if args.write_csv:
-        summary.to_csv(out_tables_dir / "time_analysis_summary.csv", index=False, encoding="utf-8")
-        hourly.to_csv(out_tables_dir / "combined_messages_hourly_distribution.csv", index=False, encoding="utf-8")
-        weekday.to_csv(out_tables_dir / "combined_messages_weekday_distribution.csv", index=False, encoding="utf-8")
-        weekday_hour.to_csv(out_tables_dir / "combined_messages_weekday_hour_distribution.csv", index=False, encoding="utf-8")
+        summary.to_csv(
+            out_tables_dir / "time_analysis_summary.csv",
+            index=False,
+            encoding="utf-8",
+        )
+        hourly.to_csv(
+            out_tables_dir / "combined_messages_hourly_distribution.csv",
+            index=False,
+            encoding="utf-8",
+        )
+        weekday.to_csv(
+            out_tables_dir / "combined_messages_weekday_distribution.csv",
+            index=False,
+            encoding="utf-8",
+        )
+        # Kept for backward compatibility with previous repository outputs.
+        weekday_hour.to_csv(
+            out_tables_dir / "combined_messages_weekday_hour_distribution.csv",
+            index=False,
+            encoding="utf-8",
+        )
 
     plot_hourly(hourly, out_figures_dir)
     plot_weekday(weekday, out_figures_dir)
@@ -508,6 +541,8 @@ def main() -> None:
 
     print("Saved time analysis workbook:")
     print(xlsx_path)
+    print("Saved weekday-hour heatmap source table:")
+    print(heatmap_source_path)
     print("Saved time figures to:")
     print(out_figures_dir)
     print("Summary:")
