@@ -5,10 +5,17 @@
 Generate two accessible, publication-ready figures for the DocTalk corpus:
 
 1. A two-panel dumbbell plot of the highest-ranking token-keyness items.
-2. A high-minus-low volume difference plot for the same top-keyness tokens.
+   Token selection, keyness statistics, and normalized direct/group
+   frequencies are taken from the final keyness review workbook so that the
+   displayed frequencies use exactly the same token universe as the keyness
+   analysis.
 
-The script uses the final cleaned lexical v2 corpus tables and writes only
-aggregated public outputs. It does not export message text or KWIC context.
+2. A low-minus-high volume difference plot for the same top-keyness tokens.
+   This supplementary contrast is calculated from the final cleaned lexical
+   v2 corpus tables.
+
+The script writes only aggregated public outputs. It does not export message
+text or KWIC context.
 
 Default inputs:
     outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
@@ -38,7 +45,6 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 
 
 DIRECT_COLOR = "#D9D9D9"
@@ -98,7 +104,7 @@ TOP_KEYNESS_DISPLAY_LABELS = {
     "Hi": "Informal greeting (Hi)",
     "ok": "Acknowledgement (ok)",
     "PatName": "Patient reference (PatName)",
-    "Hashtag_PatName": "Hashtag patient reference",
+    "Hashtag_PatName": "Hashtagged patient reference",
     "kein_Todo": "No active to-do",
     "Mention_KolName": "Colleague mention",
     "anwesend": "Attendance (anwesend)",
@@ -136,7 +142,7 @@ def parse_args() -> argparse.Namespace:
             "G_utterances_clean_lexical_v2.csv"
         ),
     )
-    parser.add_argument("--text-column", default="interaction_text_v2")
+    parser.add_argument("--text-column", default="text_clean_lexical_v2")
     parser.add_argument("--timestamp-column", default="timestamp")
     parser.add_argument("--markers", nargs="+", default=DEFAULT_MARKERS)
     parser.add_argument("--low-quantile", type=float, default=0.25)
@@ -266,6 +272,88 @@ def load_top_keyness_tokens(
     return tokens, selection
 
 
+def build_keyness_figure_source(
+    selection_table: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Build the public source table for the direct-vs-group keyness dumbbell plot.
+
+    All counts, normalized frequencies, and keyness statistics are taken
+    directly from the final keyness workbook. This avoids recalculating
+    frequencies from a potentially different lexical text representation.
+    """
+    required = {
+        "token",
+        "selected_direction",
+        "selection_rank",
+        "display_label",
+        "direct_count",
+        "group_count",
+        "total_count",
+        "direct_freq_per_1000",
+        "group_freq_per_1000",
+        "log_ratio_direct_vs_group",
+        "log_likelihood",
+        "signed_log_likelihood",
+    }
+    missing = required.difference(selection_table.columns)
+    if missing:
+        raise ValueError(
+            "Cannot build keyness figure source table. Missing columns: "
+            f"{sorted(missing)}"
+        )
+
+    source = selection_table[
+        [
+            "token",
+            "selected_direction",
+            "selection_rank",
+            "display_label",
+            "direct_count",
+            "group_count",
+            "total_count",
+            "direct_freq_per_1000",
+            "group_freq_per_1000",
+            "log_ratio_direct_vs_group",
+            "log_likelihood",
+            "signed_log_likelihood",
+        ]
+    ].copy()
+
+    numeric_columns = [
+        "direct_count",
+        "group_count",
+        "total_count",
+        "direct_freq_per_1000",
+        "group_freq_per_1000",
+        "log_ratio_direct_vs_group",
+        "log_likelihood",
+        "signed_log_likelihood",
+    ]
+    for column in numeric_columns:
+        source[column] = pd.to_numeric(
+            source[column],
+            errors="coerce",
+        )
+
+    if source[
+        [
+            "direct_freq_per_1000",
+            "group_freq_per_1000",
+            "log_likelihood",
+        ]
+    ].isna().any().any():
+        raise ValueError(
+            "The keyness figure source contains missing normalized frequencies "
+            "or log-likelihood values."
+        )
+
+    return source.sort_values(
+        ["selected_direction", "selection_rank"],
+        ascending=[True, True],
+    ).reset_index(drop=True)
+
+
 def load_corpus(
     path: Path,
     direction: str,
@@ -338,35 +426,6 @@ def load_corpus(
 
 def safe_rate(count: int | float, denominator: int | float) -> float:
     return 0.0 if denominator <= 0 else float(count) / float(denominator) * 1000.0
-
-
-def build_direct_group_table(combined: pd.DataFrame, markers: list[str]) -> pd.DataFrame:
-    rows: list[dict[str, object]] = []
-    for marker in markers:
-        row: dict[str, object] = {
-            "marker": marker,
-            "display_label": DISPLAY_LABELS.get(marker, marker),
-        }
-        for direction in ["direct", "group"]:
-            sub = combined[combined["direction"] == direction]
-            count = int(sub[f"marker__{marker}"].sum())
-            tokens = int(sub["token_count"].sum())
-            messages = int((sub[f"marker__{marker}"] > 0).sum())
-            row[f"{direction}_count"] = count
-            row[f"{direction}_messages"] = messages
-            row[f"{direction}_tokens"] = tokens
-            row[f"{direction}_rate_per_1000_tokens"] = safe_rate(count, tokens)
-        row["direct_minus_group_rate"] = (
-            float(row["direct_rate_per_1000_tokens"])
-            - float(row["group_rate_per_1000_tokens"])
-        )
-        row["absolute_rate_difference"] = abs(float(row["direct_minus_group_rate"]))
-        rows.append(row)
-
-    return pd.DataFrame(rows).sort_values(
-        ["direct_minus_group_rate", "display_label"],
-        ascending=[False, True],
-    ).reset_index(drop=True)
 
 
 def classify_volume_cells(
@@ -504,8 +563,7 @@ def style_axis(ax: plt.Axes, grid_axis: str = "x") -> None:
 
 
 def plot_top_keyness_dumbbell(
-    rate_table: pd.DataFrame,
-    selection_table: pd.DataFrame,
+    keyness_source: pd.DataFrame,
     out_base: Path,
     dpi: int,
     with_internal_titles: bool,
@@ -513,9 +571,13 @@ def plot_top_keyness_dumbbell(
     """
     Plot normalized frequencies of top keyness-ranked tokens.
 
-    Tokens are selected by log-likelihood, while the points show normalized
-    frequencies. Both panels use the same x-axis scale to preserve direct
-    comparability between communication modalities.
+    Token selection and ranking are based on log-likelihood from the final
+    keyness analysis. The plotted direct/group frequencies are taken directly
+    from that same keyness output rather than being recalculated from the
+    corpus. Both panels use the same x-axis scale.
+
+    Important:
+    The x-axis shows normalized frequency, not a keyness effect size.
     """
     fig, axes = plt.subplots(
         ncols=2,
@@ -528,27 +590,31 @@ def plot_top_keyness_dumbbell(
     overall_max = 0.0
 
     for direction in ["direct", "group"]:
-        selected = (
-            selection_table[
-                selection_table["selected_direction"] == direction
+        plot_df = (
+            keyness_source[
+                keyness_source["selected_direction"] == direction
             ]
             .sort_values("selection_rank", ascending=False)
             .copy()
         )
-        plot_df = selected.merge(
-            rate_table,
-            on="marker",
-            how="left",
-            validate="one_to_one",
-        )
+
+        if plot_df.empty:
+            raise ValueError(
+                f"No selected keyness items available for direction '{direction}'."
+            )
+
         panel_data.append(plot_df)
+
         overall_max = max(
             overall_max,
-            float(plot_df["direct_rate_per_1000_tokens"].max()),
-            float(plot_df["group_rate_per_1000_tokens"].max()),
+            float(plot_df["direct_freq_per_1000"].max()),
+            float(plot_df["group_freq_per_1000"].max()),
         )
 
-    x_limit = max(10.0, np.ceil(overall_max / 5.0) * 5.0)
+    x_limit = max(
+        10.0,
+        np.ceil(overall_max / 5.0) * 5.0,
+    )
 
     for ax, plot_df, direction, panel in zip(
         axes,
@@ -557,12 +623,21 @@ def plot_top_keyness_dumbbell(
         ["A", "B"],
     ):
         y = np.arange(len(plot_df))
-        direct = plot_df["direct_rate_per_1000_tokens"].to_numpy()
-        group = plot_df["group_rate_per_1000_tokens"].to_numpy()
+
+        direct = (
+            plot_df["direct_freq_per_1000"]
+            .to_numpy(dtype=float)
+        )
+        group = (
+            plot_df["group_freq_per_1000"]
+            .to_numpy(dtype=float)
+        )
 
         ax.set_facecolor(PANEL_BG)
 
-        for idx, (direct_value, group_value) in enumerate(zip(direct, group)):
+        for idx, (direct_value, group_value) in enumerate(
+            zip(direct, group)
+        ):
             ax.plot(
                 [direct_value, group_value],
                 [idx, idx],
@@ -581,6 +656,7 @@ def plot_top_keyness_dumbbell(
             label="Direct messages",
             zorder=3,
         )
+
         ax.scatter(
             group,
             y,
@@ -592,21 +668,21 @@ def plot_top_keyness_dumbbell(
             zorder=3,
         )
 
-        labels = (
-            plot_df["display_label_x"]
-            if "display_label_x" in plot_df.columns
-            else plot_df["display_label"]
-        )
         ax.set_yticks(y)
-        ax.set_yticklabels(labels)
+        ax.set_yticklabels(
+            plot_df["display_label"]
+        )
         ax.set_xlim(0, x_limit)
-        ax.set_xlabel("Occurrences per 1,000 tokens")
+        ax.set_xlabel(
+            "Occurrences per 1,000 tokens"
+        )
 
         panel_title = (
             "Direct-associated tokens"
             if direction == "direct"
             else "Group-associated tokens"
         )
+
         ax.set_title(
             f"{panel}. {panel_title}",
             loc="center",
@@ -614,21 +690,28 @@ def plot_top_keyness_dumbbell(
             pad=12,
         )
 
-        style_axis(ax, grid_axis="x")
+        style_axis(
+            ax,
+            grid_axis="x",
+        )
 
     axes[0].set_ylabel("")
     axes[1].set_ylabel("")
 
-    fig.suptitle(
-        "Normalized frequencies of top keyness-ranked tokens",
-        x=0.5,
-        y=0.965,
-        ha="center",
-        fontweight="bold",
-        fontsize=12,
+    if with_internal_titles:
+        fig.suptitle(
+            "Normalized frequencies of top keyness-ranked tokens",
+            x=0.5,
+            y=0.965,
+            ha="center",
+            fontweight="bold",
+            fontsize=12,
+        )
+
+    handles, legend_labels = (
+        axes[1].get_legend_handles_labels()
     )
 
-    handles, legend_labels = axes[1].get_legend_handles_labels()
     fig.legend(
         handles,
         legend_labels,
@@ -645,11 +728,15 @@ def plot_top_keyness_dumbbell(
         left=0.11,
         right=0.985,
         bottom=0.19,
-        top=0.87,
+        top=0.87 if with_internal_titles else 0.93,
         wspace=0.42,
     )
 
-    save_figure(fig, out_base, dpi)
+    save_figure(
+        fig,
+        out_base,
+        dpi,
+    )
 
 
 def build_heatmap_matrix(
@@ -814,14 +901,15 @@ def plot_volume_difference(
     axes[0].tick_params(axis="y", pad=6)
     axes[1].tick_params(labelleft=False)
 
-    fig.suptitle(
-        "Change in top keyness-ranked token frequencies by communication volume",
-        x=0.5,
-        y=0.965,
-        ha="center",
-        fontweight="bold",
-        fontsize=12,
-    )
+    if with_internal_titles:
+        fig.suptitle(
+            "Change in top keyness-ranked token frequencies by communication volume",
+            x=0.5,
+            y=0.965,
+            ha="center",
+            fontweight="bold",
+            fontsize=12,
+        )
 
     fig.text(
         0.5,
@@ -838,7 +926,7 @@ def plot_volume_difference(
         left=0.18,
         right=0.975,
         bottom=0.24,
-        top=0.86,
+        top=0.86 if with_internal_titles else 0.93,
         wspace=0.20,
     )
 
@@ -903,12 +991,13 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    direct_group_table = build_direct_group_table(
-        combined,
-        selected_markers,
+    # The main keyness figure must use the normalized frequencies from the
+    # same analysis that produced the keyness ranking.
+    keyness_figure_source = build_keyness_figure_source(
+        selection_table
     )
-    direct_group_table.to_csv(
-        tables_dir / "selected_markers_direct_group_rates.csv",
+    keyness_figure_source.to_csv(
+        tables_dir / "top_keyness_direct_group_figure_source.csv",
         index=False,
         encoding="utf-8",
     )
@@ -941,8 +1030,7 @@ def main() -> None:
     )
 
     plot_top_keyness_dumbbell(
-        direct_group_table,
-        selection_table.rename(columns={"token": "marker"}),
+        keyness_figure_source,
         figures_dir / "top_keyness_tokens_direct_vs_group",
         args.dpi,
         args.with_internal_titles,
@@ -961,7 +1049,7 @@ def main() -> None:
     plot_volume_difference(
         volume_table,
         marker_order,
-        figures_dir / "top_keyness_tokens_high_minus_low_volume",
+        figures_dir / "top_keyness_tokens_low_minus_high_volume",
         args.dpi,
         args.with_internal_titles,
     )
@@ -970,11 +1058,11 @@ def main() -> None:
 
     print("\nCreated figures:")
     print(figures_dir / "top_keyness_tokens_direct_vs_group.[png|svg|pdf]")
-    print(figures_dir / "top_keyness_tokens_high_minus_low_volume.[png|svg|pdf]")
+    print(figures_dir / "top_keyness_tokens_low_minus_high_volume.[png|svg|pdf]")
     print("\nCreated aggregated source tables:")
     for name in [
         "top_keyness_token_selection.csv",
-        "selected_markers_direct_group_rates.csv",
+        "top_keyness_direct_group_figure_source.csv",
         "weekday_hour_volume_classification.csv",
         "weekday_hour_volume_thresholds.csv",
         "selected_markers_by_volume_class.csv",
