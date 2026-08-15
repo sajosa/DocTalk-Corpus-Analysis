@@ -244,8 +244,8 @@ def plot_thread_size_distribution(
     ax.set_yticklabels(categories)
     ax.invert_yaxis()
 
-    ax.set_xlabel("Percentage of message threads")
-    ax.set_ylabel("Number of utterances per thread")
+    ax.set_xlabel("Threads (%)")
+    ax.set_ylabel("Messages per thread")
 
     if with_internal_titles:
         ax.set_title("Utterance-count distribution by message type", pad=12)
