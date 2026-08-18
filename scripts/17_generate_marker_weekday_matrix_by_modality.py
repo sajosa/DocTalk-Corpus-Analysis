@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-17b_generate_marker_weekday_matrix_by_modality.py
+17_generate_marker_weekday_matrix_by_modality.py
 
 Create a publication-ready two-panel weekday matrix for selected workflow
 markers, separated into direct and group messages.
@@ -26,7 +26,7 @@ Methodological properties
 
 Example
 -------
-python scripts/17b_generate_marker_weekday_matrix_by_modality.py \
+python scripts/17_generate_marker_weekday_matrix_by_modality.py \
     --project-root . \
     --validate-weekday-from-timestamp
 """

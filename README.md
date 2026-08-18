@@ -1,187 +1,209 @@
-# DocTalk Corpus Analysis
+**# DocTalk Corpus Analysis****
 
 Reproducible analysis pipeline for a German-language corpus of interprofessional clinical chat communication collected in the DocTalk project.
 
 The repository contains the source code, corpus-specific cleaning rules, aggregated public results, and publication figures used to analyse direct and group-based clinical messaging. The confidential source corpus is not included.
 
-## Project overview
+**## Project overview****
 
 The analysis examines authentic interprofessional chat communication from a German university hospital. The main objectives are to:
 
-* characterize temporal and interactional communication patterns;
-* identify recurrent lexical and thematic structures;
-* compare direct and group communication;
-* examine communication related to clinical coordination, handover, scheduling, and organizational processes;
-* derive implications for secure clinical messaging infrastructures and professional training.
+\\* characterize temporal and interactional communication patterns;
+\\* identify recurrent lexical and thematic structures;
+\\* compare direct and group communication;
+\\* examine communication related to clinical coordination, handover, scheduling, and organizational processes;
+\\* derive implications for secure clinical messaging infrastructures and professional training.
 
 The workflow was developed as part of a biomedical informatics and data science project and was subsequently revised for publication-oriented corpus analysis.
 
-## Repository structure
+**## Repository structure****
 
-```text
+\\`\\`\\`text
 .
 ├── data/
-│   └── synthetic_sample/        # Fully synthetic demonstration data
+│   └── synthetic\\_sample/        # Fully synthetic demonstration data
 ├── outputs/
 │   └── public/                  # Aggregated public tables and figures
 ├── rules/                       # Cleaning rules and documented decisions
 ├── scripts/                     # Numbered analysis pipeline
 ├── src/                         # Shared cleaning functions
 ├── requirements.txt             # Core dependencies
-├── requirements_full.txt        # Extended development environment
+├── requirements\\_full.txt        # Extended development environment
 ├── LICENSE
 └── README.md
-```
+\\`\\`\\`
 
 Confidential corpus data and message-level review outputs are stored locally in:
 
-```text
+\\`\\`\\`text
 outputs/confidential/
 outputs/results/
-```
+\\`\\`\\`
 
 These directories are excluded from version control.
 
-## Data availability
+**## Data availability****
 
 The original DocTalk corpus contains confidential clinical workplace communication and cannot be made publicly available.
 
 This repository therefore includes a small, fully synthetic demonstration corpus in:
 
-```text
-data/synthetic_sample/
-```
+\\`\\`\\`text
+data/synthetic\\_sample/
+\\`\\`\\`
 
 The synthetic messages were created from templates and are not derived from original corpus messages. They do not represent real patients, employees, clinical cases, conversations, or events.
 
-The synthetic sample mirrors the intermediate corpus tables produced by `01_build_corpus.py`. It can therefore be used to inspect the expected data structure and test the workflow from lexical cleaning onward.
+The synthetic sample mirrors the intermediate corpus tables produced by \\`01\\_build\\_corpus.py\\`. It can therefore be used to inspect the expected data structure and test the workflow from lexical cleaning onward.
 
 The synthetic sample does not reproduce the frequencies, effect sizes, collocations, temporal distributions, or other empirical findings of the original study.
 
 Further information is available in:
 
-```text
-data/synthetic_sample/README.md
-```
+\\`\\`\\`text
+data/synthetic\\_sample/README.md
+\\`\\`\\`
 
-## Installation
+**## Installation****
 
 Create and activate a virtual environment:
 
-```bash
+\\`\\`\\`bash
 python -m venv .venv
 source .venv/bin/activate
-```
+\\`\\`\\`
 
 On Windows:
 
-```powershell
+\\`\\`\\`powershell
 python -m venv .venv
 .venv\Scripts\activate
-```
+\\`\\`\\`
 
 Install the core dependencies:
 
-```bash
+\\`\\`\\`bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-```
+\\`\\`\\`
 
-For the complete development environment, including optional packages used in model-based analyses:
+For the extended development environment, including optional packages used in model-based analyses:
 
-```bash
-pip install -r requirements_full.txt
-```
+\\`\\`\\`bash
+pip install -r requirements\\_full.txt
+\\`\\`\\`
 
-## Synthetic demonstration data
+**## Synthetic demonstration data****
 
 The included synthetic dataset can be regenerated with:
+
+\\`\\`\\`bash
+python scripts/00\\_generate\\_synthetic\\_sample.py
+\\`\\`\\`
+
+The generator creates the following files:
+
+\\`\\`\\`text
+data/synthetic\\_sample/
+├── D\\_utterances\\_raw\.csv
+├── D\\_metadata\\_raw\.csv
+├── G\\_utterances\\_raw\.csv
+└── G\\_metadata\\_validated.csv
+\\`\\`\\`
+
+These files match the schemas of the confidential intermediate tables generated by \\`01\\_build\\_corpus.py\\`.
+
+Because the original raw export structure cannot be shared, \\`01\\_build\\_corpus.py\\` is not fully reproducible with the public sample. The public demonstration workflow begins with lexical cleaning.
+
+**## Analysis pipeline****
+
+The scripts are numbered according to the main analysis workflow.
+
+\\| Script                                          | Purpose                                                                                                                   |
+\\| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+\\| \\`00\\_generate\\_synthetic\\_sample.py\\`               | Generate the public synthetic demonstration corpus                                                                        |
+\\| \\`01\\_build\\_corpus.py\\`                            | Build direct and group corpus tables from the confidential source exports                                                 |
+\\| \\`02\\_clean\\_lexical.py\\`                           | Apply the first lexical cleaning and normalization stage                                                                  |
+\\| \\`03\\_validate\\_cleaning\\_markers.py\\`               | Validate expected markers after cleaning                                                                                  |
+\\| \\`04\\_frequency\\_ngram\\_keyness.py\\`                 | Generate frequency, n-gram, and direct-versus-group keyness results                                                       |
+\\| \\`05\\_export\\_keyness\\_review\\_tables.py\\`            | Export condensed keyness tables for manual review                                                                         |
+\\| \\`06\\_validate\\_unlinked\\_kein.py\\`                  | Inspect occurrences of the German negation marker \\`kein\\`                                                                  |
+\\| \\`07\\_create\\_clean\\_lexical\\_v2.py\\`                 | Create the final lexical analysis tables and normalized multiword expressions                                             |
+\\| \\`08\\_run\\_targeted\\_collocations\\_kwic\\_v2.py\\`       | Run targeted collocation and keyword-in-context analyses                                                                  |
+\\| \\`09\\_sort\\_collocation\\_review\\_v2.py\\`              | Prepare collocation results for structured manual review                                                                  |
+\\| \\`10\\_validate\\_therapy\\_group\\_compounds.py\\`        | Validate therapy-group multiword-expression normalization                                                                 |
+\\| \\`11\\_validate\\_kein\\_todo.py\\`                      | Validate normalization of \\`kein Todo\\` and related constructions                                                           |
+\\| \\`12\\_medical\\_terminology\\_analysis.py\\`            | Identify and review clinical terminology                                                                                  |
+\\| \\`12b\\_export\\_validated\\_medical\\_terms\\_summary.py\\` | Export the manually validated terminology summary                                                                         |
+\\| \\`13\\_time\\_analysis.py\\`                           | Generate aggregated temporal distributions, an Excel workbook, optional CSV tables, and descriptive time-analysis figures |
+\\| \\`14\\_emoji\\_analysis.py\\`                          | Analyse emoji use in direct and group messages                                                                            |
+\\| \\`15\\_generate\\_figures.py\\`                        | Generate final curated publication figures                                                                                |
+\\| \\`15b\\_generate\\_medical\\_terminology\\_figure.py\\`    | Generate the clinical terminology figure                                                                                  |
+
+**### Validation script ordering****
+
+\\`10\\_validate\\_therapy\\_group\\_compounds.py\\` documents the validation basis for the therapy-group multiword-expression normalization applied in \\`07\\_create\\_clean\\_lexical\\_v2.py\\`.
+
+Although script 10 is numbered after script 07, it is retained as a quality-control and validation script supporting the normalization rules:
+
+\\`\\`\\`text
+MT Gruppe → MT\\_Gruppe
+GT Gruppe → GT\\_Gruppe
+KT Gruppe → KT\\_Gruppe
+\\`\\`\\`
+
+The numbering reflects the practical analysis workflow rather than a strict dependency order.
+
+**## Running the public demonstration workflow
+
+The public synthetic workflow begins after corpus construction because the original raw export structure used by `01_build_corpus.py` cannot be shared.
+
+From the project root, first regenerate the fully synthetic demonstration corpus:
 
 ```bash
 python scripts/00_generate_synthetic_sample.py
 ```
 
-The generator creates the following files:
+Then run the first lexical cleaning stage:
 
-```text
-data/synthetic_sample/
-├── D_utterances_raw.csv
-├── D_metadata_raw.csv
-├── G_utterances_raw.csv
-└── G_metadata_validated.csv
+```bash
+python scripts/02_clean_lexical.py --corpus both --synthetic
 ```
 
-These files match the schemas of the confidential intermediate tables generated by `01_build_corpus.py`.
-
-Because the original raw export structure cannot be shared, `01_build_corpus.py` is not fully reproducible with the public sample. The public demonstration workflow begins with lexical cleaning.
-
-## Analysis pipeline
-
-The scripts are numbered according to the main analysis workflow.
-
-| Script                                          | Purpose                                                                                                                   |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `00_generate_synthetic_sample.py`               | Generate the public synthetic demonstration corpus                                                                        |
-| `01_build_corpus.py`                            | Build direct and group corpus tables from the confidential source exports                                                 |
-| `02_clean_lexical.py`                           | Apply the first lexical cleaning and normalization stage                                                                  |
-| `03_validate_cleaning_markers.py`               | Validate expected markers after cleaning                                                                                  |
-| `04_frequency_ngram_keyness.py`                 | Generate frequency, n-gram, and direct-versus-group keyness results                                                       |
-| `05_export_keyness_review_tables.py`            | Export condensed keyness tables for manual review                                                                         |
-| `06_validate_unlinked_kein.py`                  | Inspect occurrences of the German negation marker `kein`                                                                  |
-| `07_create_clean_lexical_v2.py`                 | Create the final lexical analysis tables and normalized multiword expressions                                             |
-| `08_run_targeted_collocations_kwic_v2.py`       | Run targeted collocation and keyword-in-context analyses                                                                  |
-| `09_sort_collocation_review_v2.py`              | Prepare collocation results for structured manual review                                                                  |
-| `10_validate_therapy_group_compounds.py`        | Validate therapy-group multiword-expression normalization                                                                 |
-| `11_validate_kein_todo.py`                      | Validate normalization of `kein Todo` and related constructions                                                           |
-| `12_medical_terminology_analysis.py`            | Identify and review clinical terminology                                                                                  |
-| `12b_export_validated_medical_terms_summary.py` | Export the manually validated terminology summary                                                                         |
-| `13_time_analysis.py`                           | Generate aggregated temporal distributions, an Excel workbook, optional CSV tables, and descriptive time-analysis figures |
-| `14_emoji_analysis.py`                          | Analyse emoji use in direct and group messages                                                                            |
-| `15_generate_figures.py`                        | Generate final curated publication figures                                                                                |
-| `15b_generate_medical_terminology_figure.py`    | Generate the clinical terminology figure                                                                                  |
-
-### Validation script ordering
-
-`10_validate_therapy_group_compounds.py` documents the validation basis for the therapy-group multiword-expression normalization applied in `07_create_clean_lexical_v2.py`.
-
-Although script 10 is numbered after script 07, it is retained as a quality-control and validation script supporting the normalization rules:
-
-```text
-MT Gruppe → MT_Gruppe
-GT Gruppe → GT_Gruppe
-KT Gruppe → KT_Gruppe
-```
-
-The numbering reflects the practical analysis workflow rather than a strict dependency order.
-
-## Running the public demonstration workflow
-
-The synthetic input files correspond to the output structure of `01_build_corpus.py`.
-
-To test lexical cleaning with the synthetic sample, the input paths used by the cleaning scripts must point to:
+This reads:
 
 ```text
 data/synthetic_sample/D_utterances_raw.csv
 data/synthetic_sample/G_utterances_raw.csv
 ```
 
-Depending on the script interface, paths can be supplied through command-line arguments or adapted in a local configuration.
+and writes cleaned synthetic tables to:
 
-To inspect the available options for a script, run:
-
-```bash
-python scripts/02_clean_lexical.py --help
+```text
+data/synthetic_sample/cleaned/
 ```
 
-The same pattern can be used for other command-line scripts:
+Next, create the final v2 lexical tables:
 
 ```bash
-python scripts/<script_name>.py --help
+python scripts/07_create_clean_lexical_v2.py --synthetic
 ```
 
-Because the demonstration corpus is intentionally small, minimum-frequency thresholds may need to be reduced for frequency, keyness, collocation, or terminology analyses.
+This generates:
 
-## Lexical cleaning approach
+```text
+data/synthetic_sample/cleaned/
+├── D_utterances_clean_lexical_v2.csv
+├── G_utterances_clean_lexical_v2.csv
+├── utterances_for_collocation_clean_lexical_v2.csv
+└── marker_presence_check_clean_lexical_v2.xlsx
+```
+
+The `--synthetic` option keeps the demonstration workflow separate from the confidential corpus and prevents synthetic test runs from overwriting empirical publication outputs.
+
+The synthetic corpus is intentionally small. Analyses that depend on minimum-frequency thresholds, stable effect-size estimation, collocation strength, or larger temporal distributions may therefore require adapted thresholds and should be interpreted only as software demonstrations.
+
+## Lexical cleaning approach****
 
 The final lexical analysis pipeline does not apply general stopword removal.
 
@@ -193,136 +215,158 @@ This decision reflects the characteristics of short workplace chat messages, in 
 
 The cleaning process includes, among other steps:
 
-* normalization of anonymization placeholders;
-* standardization of patient and colleague references;
-* normalization of gender-inclusive word forms;
-* preservation of analytically relevant lexical markers;
-* normalization of selected multiword expressions;
-* explicit handling of `Todo`, `kein Todo`, and `kein aktives Todo`;
-* preservation of underscores in normalized multiword expressions.
+\\* normalization of anonymization placeholders;
+\\* standardization of patient and colleague references;
+\\* normalization of gender-inclusive word forms;
+\\* preservation of analytically relevant lexical markers;
+\\* normalization of selected multiword expressions;
+\\* explicit handling of \\`Todo\\`, \\`kein Todo\\`, and \\`kein aktives Todo\\`;
+\\* preservation of underscores in normalized multiword expressions.
 
 Detailed cleaning and validation decisions are documented in:
 
-```text
-rules/cleaning_decisions.md
-```
+\\`\\`\\`text
+rules/cleaning\\_decisions.md
+\\`\\`\\`
 
 Protected terms are listed in:
 
-```text
-rules/protected_tokens.txt
-```
+\\`\\`\\`text
+rules/protected\\_tokens.txt
+\\`\\`\\`
 
-## Temporal analysis
+**## Temporal analysis****
 
 The temporal analysis is implemented in:
 
-```text
-scripts/13_time_analysis.py
-```
+\\`\\`\\`text
+scripts/13\\_time\\_analysis.py
+\\`\\`\\`
 
-It uses the `timestamp` columns of the cleaned direct- and group-message tables. Timestamps are expected as Unix timestamps in seconds.
+It uses the \\`timestamp\\` columns of the cleaned direct- and group-message tables. Timestamps are expected as Unix timestamps in seconds.
+
+Weekday and hour-of-day variables are derived from the reconstructed message timestamps during analysis rather than from a pre-existing weekday field in the final lexical tables.
 
 A complete run, including CSV exports, can be started with:
 
-```bash
-python scripts/13_time_analysis.py --write-csv
-```
+\\`\\`\\`bash
+python scripts/13\\_time\\_analysis.py --write-csv
+\\`\\`\\`
 
 The script writes aggregated public tables to:
 
-```text
+\\`\\`\\`text
 outputs/public/tables/time/
-```
+\\`\\`\\`
 
 The generated files include:
 
-```text
-time_analysis_tables.xlsx
-time_analysis_summary.csv
-combined_messages_hourly_distribution.csv
-combined_messages_weekday_distribution.csv
-combined_messages_weekday_hour_distribution.csv
-```
+\\`\\`\\`text
+time\\_analysis\\_tables.xlsx
+time\\_analysis\\_summary.csv
+combined\\_messages\\_hourly\\_distribution.csv
+combined\\_messages\\_weekday\\_distribution.csv
+combined\\_messages\\_weekday\\_hour\\_distribution.csv
+\\`\\`\\`
 
 The Excel workbook contains the following worksheets:
 
-* `summary`;
-* `hourly_distribution`;
-* `weekday_distribution`;
-* `weekday_hour_distribution`.
+\\* \\`summary\\`;
+\\* \\`hourly\\_distribution\\`;
+\\* \\`weekday\\_distribution\\`;
+\\* \\`weekday\\_hour\\_distribution\\`.
 
 Descriptive time-analysis figures are written to:
 
-```text
+\\`\\`\\`text
 outputs/public/figures/time/
-```
+\\`\\`\\`
 
 These include:
 
-* communication by hour of day;
-* communication by weekday;
-* a combined weekday-by-hour heatmap for direct and group messages.
+\\* communication by hour of day;
+\\* communication by weekday;
+\\* a combined weekday-by-hour heatmap for direct and group messages.
 
-The standard descriptive figures generated by script 13 are distinct from the final curated publication figures produced by `15_generate_figures.py`.
+The standard descriptive figures generated by script 13 are distinct from the final curated publication figures produced by \\`15\\_generate\\_figures.py\\`.
 
-## Public outputs
+## Workflow marker analysis
+
+Selected workflow-related lexical markers are visualized with:
+
+```text
+scripts/17_generate_marker_weekday_matrix_by_modality.py
+```
+
+The analysis includes the normalized markers `Übergabe`, `WE`, `kein_Todo`, `Rückmeldung`, and `anwesend`.
+
+For each communication modality and weekday, the script calculates the percentage of messages containing the respective marker at least once. Direct and group messages use separate modality- and weekday-specific denominators.
+
+Weekdays are derived from reconstructed message timestamps. Weekend estimates should be interpreted cautiously because of substantially smaller message denominators.
+
+Aggregated source tables are written to:
+
+```text
+outputs/public/tables/figure_sources/
+```
+
+## Public outputs*
 
 Aggregated results suitable for public release are stored in:
 
-```text
+\\`\\`\\`text
 outputs/public/
-```
+\\`\\`\\`
 
 This directory contains:
 
-* publication figures in PNG, PDF, and SVG formats;
-* aggregated frequency and n-gram tables;
-* keyness result tables;
-* emoji summaries;
-* temporal analysis tables;
-* validated summaries of clinical terminology;
-* figure source tables.
+\\* publication figures in PNG, PDF, and SVG formats;
+\\* aggregated frequency and n-gram tables;
+\\* keyness result tables;
+\\* emoji summaries;
+\\* temporal analysis tables;
+\\* validated summaries of clinical terminology;
+\\* figure source tables.
 
 Temporal analysis outputs are stored in:
 
-```text
+\\`\\`\\`text
 outputs/public/tables/time/
 outputs/public/figures/time/
-```
+\\`\\`\\`
 
 The public outputs do not contain original messages, keyword-in-context extracts, conversation-level text, speaker identities, or confidential review annotations.
 
-## Confidential outputs
+**## Confidential outputs****
 
 The following directories are excluded from Git:
 
-```text
+\\`\\`\\`text
 outputs/confidential/
 outputs/results/
-```
+\\`\\`\\`
 
 They may contain:
 
-* cleaned message-level corpus tables;
-* keyword-in-context concordances;
-* manual review files;
-* candidate terminology tables;
-* validation tables containing message context;
-* intermediate analysis outputs;
-* confidential metadata.
+\\* cleaned message-level corpus tables;
+\\* keyword-in-context concordances;
+\\* manual review files;
+\\* candidate terminology tables;
+\\* validation tables containing message context;
+\\* intermediate analysis outputs;
+\\* confidential metadata.
 
 These files must not be committed to a public repository.
 
-## Reproducibility
+**## Reproducibility****
 
 The repository supports two forms of reproducibility.
 
-### Computational reproducibility
+**### Computational reproducibility****
 
-The source code, cleaning rules, synthetic input schemas, and public aggregated outputs allow users to inspect and test the computational workflow.
+The source code, cleaning rules, synthetic input schemas, synthetic demonstration data, and public aggregated outputs allow users to inspect and test the computational workflow.
 
-### Empirical reproducibility
+**### Empirical reproducibility****
 
 The exact empirical results cannot be independently regenerated without access to the confidential DocTalk corpus.
 
@@ -330,23 +374,23 @@ Access to the original corpus is restricted because the messages originate from 
 
 The synthetic sample is therefore intended for software testing and structural inspection only.
 
-## Ethics and confidentiality
+**## Ethics and confidentiality****
 
 The source communication data were collected in the context of the DocTalk project and processed under the applicable institutional, ethical, and data-protection requirements.
 
 The public repository does not contain:
 
-* original clinical chat messages;
-* personal identifiers;
-* pseudonymized speaker mappings;
-* patient-level records;
-* message-level concordances;
-* confidential metadata;
-* files enabling reconstruction of individual communication sequences.
+\\* original clinical chat messages;
+\\* personal identifiers;
+\\* pseudonymized speaker mappings;
+\\* patient-level records;
+\\* message-level concordances;
+\\* confidential metadata;
+\\* files enabling reconstruction of individual communication sequences.
 
 All public tables were reviewed for confidentiality before release.
 
-## Use of generative AI
+**## Use of generative AI****
 
 Generative AI tools were used during repository development for selected tasks such as code review, debugging support, documentation drafting, and language editing.
 
@@ -354,30 +398,30 @@ All generated suggestions were manually reviewed, tested, and adapted by the aut
 
 No confidential source corpus was intentionally submitted to a public generative AI service.
 
-## Software quality checks
+**## Software quality checks****
 
 Before release, the scripts can be checked for syntax errors with:
 
-```bash
+\\`\\`\\`bash
 python -m compileall scripts src
-```
+\\`\\`\\`
 
 The time-analysis pipeline can be tested with:
 
-```bash
-python scripts/13_time_analysis.py --write-csv
-```
+\\`\\`\\`bash
+python scripts/13\\_time\\_analysis.py --write-csv
+\\`\\`\\`
 
 The repository should additionally be checked for accidentally tracked confidential files:
 
-```bash
+\\`\\`\\`bash
 git ls-files outputs/confidential
 git ls-files outputs/results
-```
+\\`\\`\\`
 
 Both commands should return no files.
 
-## Citation
+**## Citation****
 
 A formal citation will be added after publication and Zenodo archiving.
 
@@ -385,19 +429,19 @@ For the archived software release, please cite the version-specific Zenodo recor
 
 Suggested temporary citation format:
 
-```text
+\\`\\`\\`text
 Sayegh-Jodehl S. DocTalk Corpus Analysis: Analysis pipeline for German-language
 interprofessional clinical chat communication. GitHub repository. Version X.Y.Z.
-```
+\\`\\`\\`
 
 After the first Zenodo release, replace this placeholder with the generated DOI and citation metadata.
 
-## License
+**## License****
 
-The source code is distributed under the license specified in the `LICENSE` file.
+The source code is distributed under the license specified in the \\`LICENSE\\` file.
 
 The license applies to the source code and public documentation only. It does not grant access to, or usage rights for, the confidential DocTalk corpus.
 
-## Contact
+**## Contact****
 
 Questions regarding the analysis workflow, code, or publication outputs can be submitted through the GitHub issue tracker.
