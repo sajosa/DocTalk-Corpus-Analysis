@@ -1,0 +1,65 @@
+marker,display_label,direction,message_type,volume_class,marker_count,messages,messages_with_marker,cleaned_tokens,rate_per_1000_tokens
+du,du,direct,Direct messages,low,13,66,12,1851,7.023230686115613
+du,du,direct,Direct messages,high,682,2840,579,46746,14.58948359217901
+du,du,group,Group messages,low,4,70,4,2021,1.9792182088075212
+du,du,group,Group messages,high,87,1318,78,52982,1.642067117134121
+ich,ich,direct,Direct messages,low,41,66,30,1851,22.15018908698001
+ich,ich,direct,Direct messages,high,1351,2840,969,46746,28.900868523510034
+ich,ich,group,Group messages,low,16,70,13,2021,7.916872835230085
+ich,ich,group,Group messages,high,536,1318,358,52982,10.116643388320561
+QuestionMark,QuestionMark,direct,Direct messages,low,15,66,12,1851,8.103727714748784
+QuestionMark,QuestionMark,direct,Direct messages,high,883,2840,778,46746,18.8893167329825
+QuestionMark,QuestionMark,group,Group messages,low,17,70,12,2021,8.411677387431965
+QuestionMark,QuestionMark,group,Group messages,high,344,1318,264,52982,6.492771129817673
+dir,dir,direct,Direct messages,low,5,66,5,1851,2.7012425715829282
+dir,dir,direct,Direct messages,high,212,2840,201,46746,4.535147392290249
+dir,dir,group,Group messages,low,1,70,1,2021,0.4948045522018803
+dir,dir,group,Group messages,high,33,1318,30,52982,0.6228530444301839
+PatName,Patient reference,direct,Direct messages,low,16,66,12,1851,8.64397622906537
+PatName,Patient reference,direct,Direct messages,high,608,2840,470,46746,13.006460445813545
+PatName,Patient reference,group,Group messages,low,29,70,13,2021,14.349332013854529
+PatName,Patient reference,group,Group messages,high,369,1318,205,52982,6.964629496810238
+ja,ja,direct,Direct messages,low,9,66,6,1851,4.862236628849271
+ja,ja,direct,Direct messages,high,273,2840,249,46746,5.840071877807727
+ja,ja,group,Group messages,low,3,70,2,2021,1.4844136566056407
+ja,ja,group,Group messages,high,71,1318,64,52982,1.3400777622588804
+hast,hast,direct,Direct messages,low,1,66,1,1851,0.5402485143165856
+hast,hast,direct,Direct messages,high,102,2840,100,46746,2.182004877422667
+hast,hast,group,Group messages,low,0,70,0,2021,0.0
+hast,hast,group,Group messages,high,6,1318,6,52982,0.11324600807821524
+Hi,Hi,direct,Direct messages,low,5,66,5,1851,2.7012425715829282
+Hi,Hi,direct,Direct messages,high,77,2840,77,46746,1.6471997604073076
+Hi,Hi,group,Group messages,low,0,70,0,2021,0.0
+Hi,Hi,group,Group messages,high,2,1318,2,52982,0.03774866935940508
+Hashtag_PatName,Hashtagged patient reference,direct,Direct messages,low,8,66,8,1851,4.321988114532685
+Hashtag_PatName,Hashtagged patient reference,direct,Direct messages,high,351,2840,263,46746,7.508663842895649
+Hashtag_PatName,Hashtagged patient reference,group,Group messages,low,53,70,23,2021,26.224641266699656
+Hashtag_PatName,Hashtagged patient reference,group,Group messages,high,2138,1318,685,52982,40.35332754520403
+kein_Todo,No active to-do,direct,Direct messages,low,0,66,0,1851,0.0
+kein_Todo,No active to-do,direct,Direct messages,high,12,2840,5,46746,0.2567064561673726
+kein_Todo,No active to-do,group,Group messages,low,4,70,1,2021,1.9792182088075212
+kein_Todo,No active to-do,group,Group messages,high,456,1318,185,52982,8.606696613944358
+Mention_KolName,Direct colleague mention,direct,Direct messages,low,0,66,0,1851,0.0
+Mention_KolName,Direct colleague mention,direct,Direct messages,high,46,2840,45,46746,0.9840414153082617
+Mention_KolName,Direct colleague mention,group,Group messages,low,18,70,13,2021,8.906481939633844
+Mention_KolName,Direct colleague mention,group,Group messages,high,295,1318,222,52982,5.567928730512249
+anwesend,anwesend,direct,Direct messages,low,0,66,0,1851,0.0
+anwesend,anwesend,direct,Direct messages,high,3,2840,3,46746,0.06417661404184315
+anwesend,anwesend,group,Group messages,low,0,70,0,2021,0.0
+anwesend,anwesend,group,Group messages,high,129,1318,124,52982,2.4347891736816276
+Gruppe,Gruppe,direct,Direct messages,low,0,66,0,1851,0.0
+Gruppe,Gruppe,direct,Direct messages,high,49,2840,46,46746,1.0482180293501049
+Gruppe,Gruppe,group,Group messages,low,2,70,2,2021,0.9896091044037606
+Gruppe,Gruppe,group,Group messages,high,184,1318,118,52982,3.4728775810652674
+sich,sich,direct,Direct messages,low,7,66,1,1851,3.7817396002160995
+sich,sich,direct,Direct messages,high,156,2840,128,46746,3.337183930175844
+sich,sich,group,Group messages,low,9,70,7,2021,4.453240969816922
+sich,sich,group,Group messages,high,483,1318,247,52982,9.116303650296327
+Rückmeldung,Feedback / status update,direct,Direct messages,low,2,66,2,1851,1.0804970286331712
+Rückmeldung,Feedback / status update,direct,Direct messages,high,14,2840,14,46746,0.2994908655286014
+Rückmeldung,Feedback / status update,group,Group messages,low,2,70,2,2021,0.9896091044037606
+Rückmeldung,Feedback / status update,group,Group messages,high,148,1318,148,52982,2.793401532595976
+Datum,Datum,direct,Direct messages,low,5,66,3,1851,2.7012425715829282
+Datum,Datum,direct,Direct messages,high,86,2840,58,46746,1.839729602532837
+Datum,Datum,group,Group messages,low,17,70,11,2021,8.411677387431965
+Datum,Datum,group,Group messages,high,387,1318,141,52982,7.304367521044884

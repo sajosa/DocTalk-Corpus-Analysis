@@ -1,0 +1,50 @@
+# Cleaning decision log
+
+## 2026-06-14
+
+Manual validation showed that `@<Nachname>` refers to colleague addressing in the analyzed corpus and must therefore be standardized as `Mention_KolName`, not as `PatName`.
+
+Manual validation also showed that combined full-name placeholders such as `<Vorname><Nachname>` refer to colleagues and are therefore standardized as `KolName`, whereas remaining standalone `<Nachname>` placeholders are treated as patient-name references and standardized as `PatName`.
+
+Rule order was adjusted accordingly:
+1. salutation + `<Nachname>` → `PatName`
+2. `@<Vorname><Nachname>` / `@<Nachname>` → `Mention_KolName`
+3. `<Vorname><Nachname>` → `KolName`
+4. remaining `<Nachname>` → `PatName`
+
+
+## Manual validation: negated ToDo possessive variants
+
+Manual validation showed that variants such as `kein_Todo 's` occurred after initial ToDo normalization. These forms were standardized to `kein_Todo` to avoid artificial token fragmentation in lexical frequency and N-gram analyses.
+During validation, one hashtag-based no-task variant (#kein to do) was identified and normalized to kein_Todo in the v2 analysis-specific cleaning step.
+
+## Manual validation: quotation marks and apostrophe remnants
+
+Manual validation of the frequency tables showed that quotation marks and apostrophe remnants were preserved as part of tokens, for example `"Wie`, `"antriggern"` or `Fortschritt'`. Residual quotation marks and apostrophe characters were therefore added to the final punctuation-removal step to avoid artificial token fragmentation in frequency and N-gram analyses.
+
+## Manual validation: artefact from gender-inclusive user references
+
+Manual validation of token and N-gram tables showed that the artefact `inname` occurred in sequences such as `Benutzer inname`. These cases originated from split gender-inclusive user references. To avoid artificial token fragmentation, `Benutzer inname` was standardized to `Benutzer_innen`.
+
+
+## Manual validation: gender-inclusive colleague and user references
+
+Manual validation of token and N-gram tables showed that gender-inclusive forms such as `Kolleg:innen` and `Benutzer:innen` were split into artificial token sequences such as `Kolleg innen` and `Benutzer inname`. In the analyzed clinical communication corpus, these forms referred to colleagues or platform users within the care team. They were therefore subsumed under the standardized token `KolName` rather than retained as separate gender-inclusive surface forms. This decision reduced artificial token fragmentation while preserving the analytical category of colleague/user references.
+
+## Manual validation: gender-inclusive compounds
+
+Manual validation of token and N-gram frequency tables showed that gender-inclusive compounds were split into artificial tokens, for example `innentreffen` and `innenwechsel`. These forms had different analytical meanings and were therefore not treated uniformly. The project-related form `Nutzer:innentreffen` was standardized to `Projekt_Nutzertreffen` and excluded from the content-token view via the stopword list. The clinically relevant form `Behandler:innenwechsel` was standardized to `Behandlerwechsel` and retained for content analyses. These compound-specific rules were applied before general punctuation removal and before the normalization of colleague/user references to `KolName`.
+
+## Manual validation: gender-inclusive forms
+
+Manual validation of token and N-gram frequency tables showed that gender-inclusive forms were split into artificial residual tokens such as `innen`. We therefore searched the original corpus for terms preceding `:innen` and `*innen` and created a corpus-specific mapping table. Patient-related terms were standardized to `Patient`, `Mitpatient`, or `Probatorik_Patient`; clinical roles to tokens such as `Therapeut`, `Arzt`, or `Behandler`; and internal colleague/team references to `KolName`. This rule-based normalization was applied before general punctuation removal and eliminated residual `innen` artefacts from the cleaned lexical corpus.
+
+## Validation status
+
+After applying the revised cleaning rules, residual `innen` artefacts no longer occurred in the cleaned lexical frequency tables.
+
+
+## Patient-name sequences
+
+Repeated patient-name markers such as `PatName PatName` were manually checked and were not treated as artefacts. In the original corpus, these sequences represented genuine enumerations of multiple patients, for example in the context of group participation or group-related coordination. Therefore, repeated `PatName` sequences were retained in the cleaned lexical corpus and in N-gram analyses.
+

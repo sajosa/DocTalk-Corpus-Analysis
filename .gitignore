@@ -1,0 +1,105 @@
+# ============================================================
+# DocTalk Corpus Analysis - .gitignore
+# Publication-ready repository configuration
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Python cache and build artifacts
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+
+# ------------------------------------------------------------
+# Virtual environments and local environment files
+# ------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+.env
+.envrc
+
+
+# ------------------------------------------------------------
+# Jupyter / IDE / system files
+# ------------------------------------------------------------
+.ipynb_checkpoints/
+.DS_Store
+~$*.xlsx
+
+# VS Code settings may be tracked intentionally.
+# Uncomment the next line only if local VS Code settings should be excluded.
+.vscode/
+
+
+# ------------------------------------------------------------
+# Confidential input data
+# ------------------------------------------------------------
+data/raw/
+data/direct/
+data/group/
+data/processed/
+
+# Keep public/synthetic example data trackable, e.g.:
+# data/synthetic_sample/
+
+
+# ------------------------------------------------------------
+# Confidential and generated outputs
+# ------------------------------------------------------------
+outputs/confidential/
+outputs/results/
+
+# Keep aggregated, non-confidential public tables trackable:
+# outputs/public/tables/
+
+
+# ------------------------------------------------------------
+# Legacy output folders from earlier notebook pipeline
+# ------------------------------------------------------------
+output/
+output_BEFORE_AUDIT/
+outputs_BEFORE_AUDIT/
+outputs/results_OLD/
+
+
+# ------------------------------------------------------------
+# Local audit files and temporary project snapshots
+# ------------------------------------------------------------
+audit/
+project_tree*.txt
+repository_tree*.txt
+
+
+# ------------------------------------------------------------
+# Large local model files and serialized objects
+# ------------------------------------------------------------
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.bin
+*.gguf
+*.zip
+
+
+# ------------------------------------------------------------
+# Logs and local helper files
+# ------------------------------------------------------------
+*.log
+help.md

@@ -1,0 +1,6 @@
+conversation_id,Channel Name,Channel Type,Team Name,Anonymized,Format,team_name_normalized,team_name_harmonized,team_name_manual_validation,team_name_final,team_name_source
+G_SYN_001,G_SYN_001,group,Psychosomatik,True,synthetic,psychosomatik,psom,,psom,harmonized
+G_SYN_002,G_SYN_002,group,Psychosomatik,True,synthetic,psychosomatik,psom,,psom,harmonized
+G_SYN_003,G_SYN_003,group,Psychosomatik,True,synthetic,psychosomatik,psom,,psom,harmonized
+G_SYN_004,G_SYN_004,group,Endoskopie,True,synthetic,endoskopie,endoskopie,,endoskopie,harmonized
+G_SYN_005,G_SYN_005,group,Psychosomatik,True,synthetic,psychosomatik,psom,,psom,harmonized

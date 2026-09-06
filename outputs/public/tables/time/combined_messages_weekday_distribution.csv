@@ -1,0 +1,15 @@
+direction,message_type,weekday,weekday_name,count,relative_frequency
+direct,Direct messages,0,Monday,1045,21.26144455747711
+direct,Direct messages,1,Tuesday,1006,20.46795523906409
+direct,Direct messages,2,Wednesday,1058,21.52594099694812
+direct,Direct messages,3,Thursday,976,19.85757884028484
+direct,Direct messages,4,Friday,783,15.930824008138353
+direct,Direct messages,5,Saturday,33,0.671414038657172
+direct,Direct messages,6,Sunday,14,0.28484231943031535
+group,Group messages,0,Monday,361,14.173537495092264
+group,Group messages,1,Tuesday,387,15.19434628975265
+group,Group messages,2,Wednesday,514,20.180604632901453
+group,Group messages,3,Thursday,557,21.86886533176286
+group,Group messages,4,Friday,631,24.774244208873185
+group,Group messages,5,Saturday,76,2.98390263054574
+group,Group messages,6,Sunday,21,0.8244994110718492
