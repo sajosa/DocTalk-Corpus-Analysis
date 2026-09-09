@@ -12,6 +12,7 @@ version: 1.0.0
 date-released: 2026-09-09
 repository-code: "https://github.com/sajosa/DocTalk-Corpus-Analysis"
 url: "https://github.com/sajosa/DocTalk-Corpus-Analysis"
+doi: "10.5281/zenodo.22682263"
 license: MIT
 keywords:
   - clinical communication
