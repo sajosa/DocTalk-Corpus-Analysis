@@ -369,8 +369,6 @@ All four commands should return no files.
 
 ## Citation
 
-## Citation
-
 Sayegh-Jodehl, S. (2026). *DocTalk Corpus Analysis* (Version 1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22682263
 
 For the archived software release, please cite the version-specific Zenodo record rather than only the GitHub repository.
