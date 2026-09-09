@@ -1,5 +1,5 @@
 # DocTalk Corpus Analysis
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22682263.svg)](https://doi.org/10.5281/zenodo.22682263)
 Reproducible analysis pipeline for a German-language corpus of interprofessional clinical chat communication collected in the DocTalk project.
 
 The repository contains source code, corpus-specific cleaning rules, aggregated public results, publication figures, and a fully synthetic demonstration dataset. The confidential source corpus is not included.
