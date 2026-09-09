@@ -23,17 +23,17 @@ The workflow was developed as part of a biomedical informatics and data science 
 ## Repository structure
 
 .
-├── data/<br>
-│   └── synthetic_sample/        # Fully synthetic demonstration data <br>
-├── outputs/<br>
-│   └── public/                  # Aggregated public tables and figures<br>
-├── rules/                       # Cleaning rules and documented decisions<br>
-├── scripts/                     # Numbered analysis pipeline<br>
-├── src/                         # Shared cleaning functions<br>
-├── requirements.txt             # Core dependencies<br>
-├── requirements_full.txt        # Extended development environment<br>
-├── LICENSE<br>
-└── README.md<br>
+├── data/
+│   └── synthetic_sample/        # Fully synthetic demonstration data 
+├── outputs/
+│   └── public/                  # Aggregated public tables and figures
+├── rules/                       # Cleaning rules and documented decisions
+├── scripts/                     # Numbered analysis pipeline
+├── src/                         # Shared cleaning functions
+├── requirements.txt             # Core dependencies
+├── requirements_full.txt        # Extended development environment
+├── LICENSE
+└── README.md
 
 Confidential corpus data and message-level review outputs are stored locally in:
 
