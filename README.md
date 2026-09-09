@@ -16,6 +16,18 @@ The analysis examines authentic interprofessional chat communication from a Germ
 
 The workflow was developed as part of a biomedical informatics and data science project and subsequently revised for publication-oriented corpus analysis.
 
+## Project background and funding
+
+This repository contains the analysis pipeline developed for a corpus study conducted in the context of the research project **“DocTalk – Dialog trifft Chatbot: Kollaborierendes Lernen und Lehren für Ärzt:innen im Prozess der Arbeit.”**
+
+Further information about the project and its institutional context is available from:
+
+* [Digital Medicine at Charité – Universitätsmedizin Berlin](https://psychosomatik.charite.de/forschung/digitale_medizin/)
+* [DocTalk project at Charité – Universitätsmedizin Berlin](https://psychosomatik.charite.de/forschung/digitale_medizin/projekt_doctalk/)
+* [DocTalk project website](https://doctalk.chat/)
+
+The DocTalk project was funded by the German Federal Ministry of Education and Research (Bundesministerium für Bildung und Forschung, BMBF) under [grant number 01PG20002](https://qd.bmbfcluster.de/de/projektdatenbank-27.php?D=378&F=0&M=445&T=1), as part of the programme *Digital Media in Vocational Education* and its *DigiMed* funding line.
+
 ## Repository structure
 
 ```text
