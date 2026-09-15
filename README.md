@@ -1,6 +1,6 @@
 # DocTalk Corpus Analysis
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22682263.svg)](https://doi.org/10.5281/zenodo.22682262)]
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22682262.svg)](https://doi.org/10.5281/zenodo.22682262)
 
 Reproducible analysis pipeline for a German-language corpus of interprofessional clinical chat communication collected in the DocTalk project.
 
