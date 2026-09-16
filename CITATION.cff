@@ -8,11 +8,11 @@ authors:
     given-names: "Sabine"
     orcid: "https://orcid.org/0000-0002-4277-4712"
     affiliation: "Charité – Universitätsmedizin Berlin"
-version: 1.0.0
-date-released: 2026-09-09
+version: 1.0.1
+date-released: 2026-09-15
 repository-code: "https://github.com/sajosa/DocTalk-Corpus-Analysis"
 url: "https://github.com/sajosa/DocTalk-Corpus-Analysis"
-doi: "10.5281/zenodo.22682263"
+doi: "10.5281/zenodo.22682262"
 license: MIT
 keywords:
   - clinical communication
