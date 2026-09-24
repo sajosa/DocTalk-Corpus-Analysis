@@ -1,0 +1,16 @@
+﻿corpus,marker,group_channels_total,group_messages_total,messages_with_marker,message_coverage_pct,marker_occurrences,channels_with_marker,channel_coverage_pct,top1_channel_share_of_positive_messages_pct,top3_channel_share_of_positive_messages_pct,group_full_message_coverage_pct,message_coverage_change_from_full_pct
+group_full,Übergabe,86,2547,199,7.8131,202,16,18.6047,64.3216,84.4221,7.8131,0.0
+group_full,WE,86,2547,91,3.5728,121,5,5.814,89.011,97.8022,3.5728,0.0
+group_full,kein_Todo,86,2547,245,9.6192,700,3,3.4884,89.7959,100.0,9.6192,0.0
+group_full,Rückmeldung,86,2547,214,8.402,215,9,10.4651,51.4019,85.9813,8.402,0.0
+group_full,anwesend,86,2547,175,6.8708,181,7,8.1395,52.0,93.7143,6.8708,0.0
+group_nonadjacent,Übergabe,66,2287,199,8.7014,202,16,24.2424,64.3216,84.4221,7.8131,11.3686
+group_nonadjacent,WE,66,2287,91,3.979,121,5,7.5758,89.011,97.8022,3.5728,11.3686
+group_nonadjacent,kein_Todo,66,2287,245,10.7127,700,3,4.5455,89.7959,100.0,9.6192,11.3686
+group_nonadjacent,Rückmeldung,66,2287,214,9.3572,215,9,13.6364,51.4019,85.9813,8.402,11.3686
+group_nonadjacent,anwesend,66,2287,175,7.6519,181,7,10.6061,52.0,93.7143,6.8708,11.3686
+group_psychosomatic,Übergabe,25,2004,190,9.481,192,10,40.0,67.3684,88.4211,7.8131,21.3478
+group_psychosomatic,WE,25,2004,91,4.5409,121,5,20.0,89.011,97.8022,3.5728,27.0958
+group_psychosomatic,kein_Todo,25,2004,245,12.2255,700,3,12.0,89.7959,100.0,9.6192,27.0958
+group_psychosomatic,Rückmeldung,25,2004,211,10.5289,212,6,24.0,52.1327,87.2038,8.402,25.3141
+group_psychosomatic,anwesend,25,2004,173,8.6327,179,5,20.0,52.6012,94.7977,6.8708,25.6433

@@ -1,0 +1,4 @@
+﻿corpus,peak_weekday,peak_weekday_messages,peak_weekday_pct,peak_hour,peak_hour_messages,peak_hour_pct
+group_full,Friday,631,24.7742,14,381,14.9588
+group_nonadjacent,Friday,588,25.7105,14,362,15.8286
+group_psychosomatic,Friday,542,27.0459,14,340,16.9661

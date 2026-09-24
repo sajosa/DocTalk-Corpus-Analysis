@@ -1,0 +1,33 @@
+{
+  "input_path": "outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv",
+  "classification_file": "outputs/confidential/review_files/team_sensitivity/team_channel_classification.xlsx",
+  "text_col": "text_clean_lexical",
+  "marker_text_col": "text_clean_lexical_v2",
+  "message_id_col": "id",
+  "unit_col": "conversation_id",
+  "direction_col": "direction",
+  "team_col": "Team Name",
+  "channel_col": "Channel Name",
+  "weekday_col": "weekday",
+  "timestamp_col": "timestamp",
+  "min_total_frequency": 3,
+  "markers": [
+    "Übergabe",
+    "WE",
+    "kein_Todo",
+    "Rückmeldung",
+    "anwesend"
+  ],
+  "selected_key_items": [
+    "du",
+    "ich",
+    "QuestionMark",
+    "PatName",
+    "Hashtag_PatName",
+    "kein_Todo",
+    "Mention_KolName",
+    "Rückmeldung",
+    "anwesend"
+  ],
+  "medical_mentions": null
+}

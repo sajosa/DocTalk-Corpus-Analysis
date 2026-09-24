@@ -1,0 +1,5 @@
+﻿corpus,communication_units,messages,cleaned_tokens,nonempty_lexical_messages,tokens_per_message
+direct,293,4915,88221,4897,17.9493
+group_full,86,2547,90297,2545,35.4523
+group_nonadjacent,66,2287,87002,2285,38.042
+group_psychosomatic,25,2004,78851,2002,39.3468
