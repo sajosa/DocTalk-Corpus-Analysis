@@ -548,7 +548,11 @@ def set_publication_style() -> None:
 
 def save_figure(fig: plt.Figure, out_base: Path, dpi: int) -> None:
     out_base.parent.mkdir(parents=True, exist_ok=True)
-    kwargs = {"bbox_inches": "tight", "facecolor": WHITE}
+    kwargs = {
+        "bbox_inches": "tight",
+        "pad_inches": 0.15,
+        "facecolor": WHITE,
+    }
     fig.savefig(out_base.with_suffix(".png"), dpi=dpi, **kwargs)
     fig.savefig(out_base.with_suffix(".svg"), **kwargs)
     fig.savefig(out_base.with_suffix(".pdf"), **kwargs)
@@ -581,7 +585,7 @@ def plot_top_keyness_dumbbell(
     """
     fig, axes = plt.subplots(
         ncols=2,
-        figsize=(11.8, 6.8),
+        figsize=(13.6, 6.8),
         sharex=True,
         constrained_layout=False,
     )
@@ -725,11 +729,11 @@ def plot_top_keyness_dumbbell(
     )
 
     fig.subplots_adjust(
-        left=0.11,
+        left=0.12,
         right=0.985,
         bottom=0.19,
         top=0.87 if with_internal_titles else 0.93,
-        wspace=0.42,
+        wspace=0.58,
     )
 
     save_figure(
@@ -1054,7 +1058,6 @@ def main() -> None:
         args.with_internal_titles,
     )
 
-    
 
     print("\nCreated figures:")
     print(figures_dir / "top_keyness_tokens_direct_vs_group.[png|svg|pdf]")
