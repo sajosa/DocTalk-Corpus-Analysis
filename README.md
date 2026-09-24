@@ -159,6 +159,7 @@ Because the original raw export structure cannot be shared, `01_build_corpus.py`
 | `16_generate_accessible_lexical_figures.py` | Generate the direct-versus-group keyness figure and low-minus-high volume supplement |
 | `17_generate_marker_weekday_matrix_by_modality.py` | Generate the weekday workflow-marker matrix by communication modality |
 | `18_analyze_unit_dispersion.py` | Assess the distribution and concentration of workflow markers and selected keyness items across communication units |
+| `19_team_sensitivity_analysis.py` | Evaluate the robustness of group-message findings across the complete, nonadjacent, and psychosomatic-only channel subsets |
 
 ### Validation script ordering
 
@@ -390,6 +391,7 @@ Public outputs include:
 - validated summaries of clinical terminology;
 - figure source tables;
 - aggregated communication-unit dispersion and concentration tables.
+- aggregated team-sensitivity tables for corpus composition, selected keyness items, workflow markers, procedural terms, and temporal peaks.
 
 The public outputs do not contain original messages, keyword-in-context extracts, conversation-level text, speaker identities, or confidential review annotations.
 
