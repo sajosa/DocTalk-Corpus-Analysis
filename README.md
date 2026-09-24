@@ -158,6 +158,7 @@ Because the original raw export structure cannot be shared, `01_build_corpus.py`
 | `15b_generate_medical_terminology_figure.py` | Generate the clinical terminology figure |
 | `16_generate_accessible_lexical_figures.py` | Generate the direct-versus-group keyness figure and low-minus-high volume supplement |
 | `17_generate_marker_weekday_matrix_by_modality.py` | Generate the weekday workflow-marker matrix by communication modality |
+| `18_analyze_unit_dispersion.py` | Assess the distribution and concentration of workflow markers and selected keyness items across communication units |
 
 ### Validation script ordering
 
@@ -321,6 +322,48 @@ Aggregated source tables are written to:
 
 `outputs/public/tables/figure_sources/`
 
+## Unit-level dispersion and concentration analysis
+
+Because pooled message and token frequencies may be influenced by a small number of high-volume communication units, unit-level dispersion is assessed with:
+
+[`scripts/18_analyze_unit_dispersion.py`](scripts/18_analyze_unit_dispersion.py)
+
+The analysis distinguishes between 293 direct-message conversations and 86 group channels. For workflow markers, it reports the number and proportion of group channels containing at least one marker-positive message, together with the proportions of marker-positive messages contributed by the most frequent channel and the three most frequent channels. For selected keyness items, it reports communication-unit coverage, message coverage, occurrence rates, and the concentration of occurrences in the most frequent units.
+
+The workflow-marker analysis can be run with:
+
+```bash
+python scripts/18_analyze_unit_dispersion.py --analysis workflow
+```
+
+The complete workflow-marker and keyness-item analysis can be run with:
+
+```bash
+python scripts/18_analyze_unit_dispersion.py --analysis all
+```
+
+The script uses exact, case-sensitive Unicode word-token matching and preserves normalized underscore compounds such as `kein_Todo` as single analysis tokens. This matches the token-detection logic used for the final marker and lexical figures.
+
+The resulting v2 analysis-token counts are 88,287 for direct messages and 90,187 for group messages. These tokenizer-specific counts should not be confused with the v1 whitespace-token denominators of 88,221 and 90,297 used for the validated medical-terminology analysis. The distinction reflects analysis-specific normalization and tokenization rather than differences in the number of included messages.
+
+Aggregated public outputs are written to:
+
+```text
+outputs/public/tables/unit_dispersion/
+```
+
+These include:
+
+* `workflow_marker_channel_dispersion.csv`
+* `keyness_item_unit_dispersion.csv`
+* `unit_dispersion_summary.xlsx`
+* `unit_dispersion_run_config.json`
+
+The public tables contain no communication-unit identifiers or message text. An anonymized unit-level review workbook is written to `outputs/confidential/review_files/unit_dispersion/` and is excluded from version control.
+
+This analysis is descriptive and is intended as a robustness assessment of pooled corpus results. It does not constitute a multilevel statistical model or formally adjust keyness statistics for dependence among messages from the same communication unit.
+
+
 ## Public outputs
 
 Aggregated results suitable for public release are stored in:
@@ -334,6 +377,7 @@ The principal publication figures are:
 - weekday-by-hour message distribution for direct and group communication;
 - weekday distribution of selected workflow markers by communication modality.
 
+
 Supplementary figures include the low-minus-high communication-volume lexical contrast and the validated clinical terminology figure.
 
 Public outputs include:
@@ -344,7 +388,8 @@ Public outputs include:
 - emoji summaries;
 - temporal analysis tables;
 - validated summaries of clinical terminology;
-- figure source tables.
+- figure source tables;
+- aggregated communication-unit dispersion and concentration tables.
 
 The public outputs do not contain original messages, keyword-in-context extracts, conversation-level text, speaker identities, or confidential review annotations.
 

@@ -1,0 +1,30 @@
+{
+  "input": "outputs/confidential/cleaned_corpus_tables/utterances_for_collocation_clean_lexical_v2.csv",
+  "analysis": "all",
+  "unit_col": "conversation_id",
+  "direction_col": "direction",
+  "text_col": "text_clean_lexical_v2",
+  "workflow_markers": [
+    "Übergabe",
+    "WE",
+    "kein_Todo",
+    "Rückmeldung",
+    "anwesend"
+  ],
+  "keyness_items": [
+    "du",
+    "ich",
+    "QuestionMark",
+    "Hashtag_PatName",
+    "kein_Todo",
+    "Mention_KolName",
+    "Rückmeldung",
+    "anwesend"
+  ],
+  "marker_source": "outputs/public/tables/figure_sources/marker_weekday_matrix_by_modality_source.csv",
+  "corpus_validation_skipped": false,
+  "marker_source_validation_skipped": false,
+  "matching": "exact case-sensitive Unicode word-token matching; underscore compounds preserved",
+  "message_level_presence": "binary; repeated occurrences counted once",
+  "public_outputs_contain_unit_identifiers": false
+}

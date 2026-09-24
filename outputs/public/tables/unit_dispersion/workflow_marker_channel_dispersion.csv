@@ -1,0 +1,6 @@
+﻿marker,modality,group_channels_total,group_messages_total,messages_with_marker,message_coverage_pct,marker_occurrences,channels_with_marker,channel_coverage_pct,top1_channel_share_of_positive_messages_pct,top3_channel_share_of_positive_messages_pct,q1_channel_prevalence_pct_all_channels,median_channel_prevalence_pct_all_channels,q3_channel_prevalence_pct_all_channels,iqr_channel_prevalence_pct_all_channels,median_channel_prevalence_pct_positive_channels
+Übergabe,group,86,2547,199,7.813,202,16,18.605,64.322,84.422,0.0,0.0,0.0,0.0,16.808
+WE,group,86,2547,91,3.573,121,5,5.814,89.011,97.802,0.0,0.0,0.0,0.0,1.299
+kein_Todo,group,86,2547,245,9.619,700,3,3.488,89.796,100.0,0.0,0.0,0.0,0.0,40.678
+Rückmeldung,group,86,2547,214,8.402,215,9,10.465,51.402,85.981,0.0,0.0,0.0,0.0,5.963
+anwesend,group,86,2547,175,6.871,181,7,8.14,52.0,93.714,0.0,0.0,0.0,0.0,20.0
