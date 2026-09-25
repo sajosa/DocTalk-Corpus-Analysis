@@ -4,17 +4,25 @@
 """
 16_generate_thread_length_figure.py
 
-Generate the publication-ready thread-length distribution figure for the
-DocTalk corpus.
+Generate the publication-ready communication-unit size distribution figure
+for the DocTalk corpus.
 
 The script is intentionally single-purpose: it creates Figure 1 only.
 It does not generate temporal heatmaps, avoiding overlap with the dedicated
 time-analysis script.
 
+Direct communication units represent dyadic conversations.
+Group communication units represent Mattermost channels involving more than
+2 users. They should not be interpreted as reply-based conversational threads
+or discrete conversational episodes.
+
 Inputs
 ------
-outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv
-outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv
+outputs/confidential/cleaned_corpus_tables/
+    D_utterances_clean_lexical_v2.csv
+
+outputs/confidential/cleaned_corpus_tables/
+    G_utterances_clean_lexical_v2.csv
 
 Outputs
 -------
@@ -23,18 +31,20 @@ outputs/public/tables/figure_sources/thread_size_distribution_table.csv
 
 The final corpus is expected to contain:
 - 293 direct-message conversations
-- 86 group-message threads
-"""
+- 86 group-message channels
 
+For backward compatibility, the existing output filename and source-table
+columns `thread_bin` and `n_threads` are retained.
+"""
 
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 
 THREAD_BINS = [
@@ -54,95 +64,174 @@ PANEL_BG = "#F7F7F7"
 
 
 def set_publication_style() -> None:
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "font.size": 10,
-        "axes.titlesize": 12,
-        "axes.labelsize": 11,
-        "xtick.labelsize": 9.5,
-        "ytick.labelsize": 9.5,
-        "legend.fontsize": 10,
-        "figure.titlesize": 12,
-        "axes.linewidth": 0.8,
-        "savefig.dpi": 600,
-        "savefig.facecolor": "white",
-        "savefig.edgecolor": "white",
-        "figure.facecolor": "white",
-    })
+    """Apply consistent publication-ready plotting defaults."""
+
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "font.size": 10,
+            "axes.titlesize": 12,
+            "axes.labelsize": 11,
+            "xtick.labelsize": 9.5,
+            "ytick.labelsize": 9.5,
+            "legend.fontsize": 10,
+            "figure.titlesize": 12,
+            "axes.linewidth": 0.8,
+            "savefig.dpi": 600,
+            "savefig.facecolor": "white",
+            "savefig.edgecolor": "white",
+            "figure.facecolor": "white",
+        }
+    )
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+
     parser = argparse.ArgumentParser(
-        description="Generate the publication-ready thread-length figure for the DocTalk corpus."
+        description=(
+            "Generate the publication-ready communication-unit size "
+            "distribution figure for the DocTalk corpus."
+        )
     )
-    parser.add_argument("--project-root", default=".")
+
+    parser.add_argument(
+        "--project-root",
+        default=".",
+    )
+
     parser.add_argument(
         "--direct-path",
-        default="outputs/confidential/cleaned_corpus_tables/D_utterances_clean_lexical_v2.csv",
+        default=(
+            "outputs/confidential/cleaned_corpus_tables/"
+            "D_utterances_clean_lexical_v2.csv"
+        ),
     )
+
     parser.add_argument(
         "--group-path",
-        default="outputs/confidential/cleaned_corpus_tables/G_utterances_clean_lexical_v2.csv",
+        default=(
+            "outputs/confidential/cleaned_corpus_tables/"
+            "G_utterances_clean_lexical_v2.csv"
+        ),
     )
+
     parser.add_argument(
         "--figures-dir",
         default="outputs/public/figures",
     )
+
     parser.add_argument(
         "--tables-dir",
         default="outputs/public/tables/figure_sources",
     )
-    parser.add_argument("--dpi", type=int, default=600)
+
+    parser.add_argument(
+        "--dpi",
+        type=int,
+        default=600,
+    )
+
     parser.add_argument(
         "--with-internal-titles",
         action="store_true",
-        help="Keep titles inside figures. Otherwise use captions in manuscript.",
+        help=(
+            "Keep a title inside the figure. By default, the title is "
+            "provided only in the manuscript caption."
+        ),
     )
-    parser.add_argument("--no-source-tables", action="store_true")
+
+    parser.add_argument(
+        "--no-source-tables",
+        action="store_true",
+        help="Do not write the aggregated figure-source table.",
+    )
+
     return parser.parse_args()
 
 
 def resolve_path(root: Path, path: str) -> Path:
-    p = Path(path)
-    return p if p.is_absolute() else root / p
+    """Resolve a potentially relative path against the project root."""
+
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else root / candidate
 
 
 def load_csv(path: Path) -> pd.DataFrame:
+    """Load a CSV file after checking that it exists."""
+
     if not path.exists():
         raise FileNotFoundError(f"Input file not found: {path}")
+
     return pd.read_csv(path)
 
 
-def thread_bin_label(n: int) -> str:
-    for label, lo, hi in THREAD_BINS:
-        if lo <= n <= hi:
+def thread_bin_label(n_messages: int) -> str:
+    """
+    Assign a communication unit to a predefined message-count category.
+
+    The historical function name is retained for compatibility with the
+    existing script and output structure.
+    """
+
+    for label, lower_bound, upper_bound in THREAD_BINS:
+        if lower_bound <= n_messages <= upper_bound:
             return label
+
     return ">100"
 
 
-def build_thread_size_distribution(df: pd.DataFrame, corpus_label: str) -> pd.DataFrame:
-    thread_counts = (
+def build_thread_size_distribution(
+    df: pd.DataFrame,
+    corpus_label: str,
+) -> pd.DataFrame:
+    """
+    Calculate the distribution of communication-unit sizes.
+
+    Direct units are dyadic conversations. Group units are Mattermost
+    channels. Existing output column names are retained for compatibility.
+    """
+
+    unit_counts = (
         df.groupby("conversation_id", dropna=False)
         .size()
         .reset_index(name="n_utterances")
     )
-    thread_counts["thread_bin"] = thread_counts["n_utterances"].apply(thread_bin_label)
 
-    categories = [x[0] for x in THREAD_BINS]
+    unit_counts["thread_bin"] = unit_counts["n_utterances"].apply(
+        thread_bin_label
+    )
 
-    out = (
-        thread_counts["thread_bin"]
+    categories = [item[0] for item in THREAD_BINS]
+
+    distribution = (
+        unit_counts["thread_bin"]
         .value_counts()
         .reindex(categories, fill_value=0)
         .rename_axis("thread_bin")
         .reset_index(name="n_threads")
     )
 
-    total = out["n_threads"].sum()
-    out["percentage"] = out["n_threads"] / total * 100
-    out["corpus"] = corpus_label
+    total_units = int(distribution["n_threads"].sum())
 
-    return out[["corpus", "thread_bin", "n_threads", "percentage"]]
+    if total_units == 0:
+        raise ValueError(
+            f"No communication units were found for corpus {corpus_label!r}."
+        )
+
+    distribution["percentage"] = (
+        distribution["n_threads"] / total_units * 100
+    )
+    distribution["corpus"] = corpus_label
+
+    return distribution[
+        [
+            "corpus",
+            "thread_bin",
+            "n_threads",
+            "percentage",
+        ]
+    ]
 
 
 def plot_thread_size_distribution(
@@ -152,85 +241,134 @@ def plot_thread_size_distribution(
     dpi: int,
     with_internal_titles: bool,
 ) -> None:
-    categories = [x[0] for x in THREAD_BINS]
+    """Create and save Figure 1."""
 
-    direct_plot = direct_dist.set_index("thread_bin").loc[categories].reset_index()
-    group_plot = group_dist.set_index("thread_bin").loc[categories].reset_index()
+    categories = [item[0] for item in THREAD_BINS]
 
-    y = np.arange(len(categories))
-    bar_h = 0.34
+    direct_plot = (
+        direct_dist.set_index("thread_bin")
+        .loc[categories]
+        .reset_index()
+    )
+
+    group_plot = (
+        group_dist.set_index("thread_bin")
+        .loc[categories]
+        .reset_index()
+    )
+
+    y_positions = np.arange(len(categories))
+    bar_height = 0.34
 
     fig, ax = plt.subplots(figsize=(7.2, 4.8))
     ax.set_facecolor(PANEL_BG)
 
     ax.barh(
-        y - bar_h / 2,
+        y_positions - bar_height / 2,
         direct_plot["percentage"],
-        height=bar_h,
+        height=bar_height,
         color=DIRECT_COLOR,
         edgecolor=EDGE_COLOR,
         linewidth=0.6,
-        label="Direct messages",
+        label="Direct conversations",
     )
+
     ax.barh(
-        y + bar_h / 2,
+        y_positions + bar_height / 2,
         group_plot["percentage"],
-        height=bar_h,
+        height=bar_height,
         color=GROUP_COLOR,
         edgecolor=EDGE_COLOR,
         linewidth=0.6,
-        label="Group messages",
+        label="Group channels",
     )
 
-    for i, row in direct_plot.iterrows():
+    for index, row in direct_plot.iterrows():
         ax.text(
             row["percentage"] + 0.7,
-            i - bar_h / 2,
-            f'{row["percentage"]:.1f}% (n={int(row["n_threads"])})',
+            index - bar_height / 2,
+            (
+                f'{row["percentage"]:.1f}% '
+                f'(n={int(row["n_threads"])})'
+            ),
             va="center",
             ha="left",
             fontsize=9,
             color=EDGE_COLOR,
         )
 
-    for i, row in group_plot.iterrows():
+    for index, row in group_plot.iterrows():
         ax.text(
             row["percentage"] + 0.7,
-            i + bar_h / 2,
-            f'{row["percentage"]:.1f}% (n={int(row["n_threads"])})',
+            index + bar_height / 2,
+            (
+                f'{row["percentage"]:.1f}% '
+                f'(n={int(row["n_threads"])})'
+            ),
             va="center",
             ha="left",
             fontsize=9,
             color=EDGE_COLOR,
         )
 
-    ax.set_yticks(y)
+    ax.set_yticks(y_positions)
     ax.set_yticklabels(categories)
     ax.invert_yaxis()
 
-    ax.set_xlabel("Threads (%)")
-    ax.set_ylabel("Messages per thread")
+    ax.set_xlabel("Communication units (%)")
+    ax.set_ylabel("Messages per communication unit")
 
     if with_internal_titles:
-        ax.set_title("Distribution of thread length by communication modality", pad=12)
+        ax.set_title(
+            "Distribution of communication-unit size by modality",
+            pad=12,
+        )
 
-    ax.grid(axis="x", color=GRID_COLOR, linewidth=0.7)
+    ax.grid(
+        axis="x",
+        color=GRID_COLOR,
+        linewidth=0.7,
+    )
     ax.set_axisbelow(True)
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    xmax = max(direct_plot["percentage"].max(), group_plot["percentage"].max())
-    ax.set_xlim(0, xmax + 14)
+    maximum_percentage = max(
+        direct_plot["percentage"].max(),
+        group_plot["percentage"].max(),
+    )
 
-    ax.legend(frameon=False, loc="lower right")
+    ax.set_xlim(0, maximum_percentage + 14)
+
+    ax.legend(
+        frameon=False,
+        loc="lower right",
+    )
 
     fig.tight_layout()
 
-    out_base.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_base.with_suffix(".png"), dpi=dpi, bbox_inches="tight")
-    fig.savefig(out_base.with_suffix(".svg"), bbox_inches="tight")
-    fig.savefig(out_base.with_suffix(".pdf"), bbox_inches="tight")
+    out_base.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    fig.savefig(
+        out_base.with_suffix(".png"),
+        dpi=dpi,
+        bbox_inches="tight",
+    )
+
+    fig.savefig(
+        out_base.with_suffix(".svg"),
+        bbox_inches="tight",
+    )
+
+    fig.savefig(
+        out_base.with_suffix(".pdf"),
+        bbox_inches="tight",
+    )
+
     plt.close(fig)
 
 
@@ -240,43 +378,70 @@ def validate_final_thread_counts(
     expected_direct_threads: int = 293,
     expected_group_threads: int = 86,
 ) -> None:
-    """Validate that Figure 1 is based on the locked final corpus structure."""
+    """
+    Validate that Figure 1 is based on the locked final corpus structure.
+
+    The historical parameter names are retained for compatibility. They refer
+    to communication units: direct conversations and group channels.
+    """
+
     direct_total = int(direct_dist["n_threads"].sum())
     group_total = int(group_dist["n_threads"].sum())
 
     if direct_total != expected_direct_threads:
         raise ValueError(
-            f"Unexpected number of direct-message conversations: {direct_total}. "
-            f"Expected {expected_direct_threads}."
+            "Unexpected number of direct-message conversations: "
+            f"{direct_total}. Expected {expected_direct_threads}."
         )
 
     if group_total != expected_group_threads:
         raise ValueError(
-            f"Unexpected number of group-message threads: {group_total}. "
-            f"Expected {expected_group_threads}."
+            "Unexpected number of group-message channels: "
+            f"{group_total}. Expected {expected_group_threads}."
         )
 
     print(
-        "Final thread-count validation passed: "
+        "Final communication-unit validation passed: "
         f"{direct_total} direct-message conversations and "
-        f"{group_total} group-message threads."
+        f"{group_total} group-message channels."
     )
 
 
 def main() -> None:
+    """Run the Figure 1 generation workflow."""
+
     args = parse_args()
     set_publication_style()
 
     project_root = Path(args.project_root).resolve()
-    direct_path = resolve_path(project_root, args.direct_path)
-    group_path = resolve_path(project_root, args.group_path)
-    figures_dir = resolve_path(project_root, args.figures_dir)
-    tables_dir = resolve_path(project_root, args.tables_dir)
 
-    figures_dir.mkdir(parents=True, exist_ok=True)
+    direct_path = resolve_path(
+        project_root,
+        args.direct_path,
+    )
+    group_path = resolve_path(
+        project_root,
+        args.group_path,
+    )
+    figures_dir = resolve_path(
+        project_root,
+        args.figures_dir,
+    )
+    tables_dir = resolve_path(
+        project_root,
+        args.tables_dir,
+    )
+
+    figures_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     if not args.no_source_tables:
-        tables_dir.mkdir(parents=True, exist_ok=True)
+        tables_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
     print(f"Project root: {project_root}")
     print(f"Direct input: {direct_path}")
@@ -287,11 +452,16 @@ def main() -> None:
     group_df = load_csv(group_path)
 
     required_column = "conversation_id"
-    for label, df in [("direct", direct_df), ("group", group_df)]:
-        if required_column not in df.columns:
+
+    for corpus_label, corpus_df in [
+        ("direct", direct_df),
+        ("group", group_df),
+    ]:
+        if required_column not in corpus_df.columns:
             raise ValueError(
-                f"Required column '{required_column}' missing from {label} input. "
-                f"Available columns: {df.columns.tolist()}"
+                f"Required column {required_column!r} missing from "
+                f"{corpus_label} input. Available columns: "
+                f"{corpus_df.columns.tolist()}"
             )
 
     print(f"Loaded direct: {direct_df.shape}")
@@ -301,6 +471,7 @@ def main() -> None:
         direct_df,
         "direct",
     )
+
     group_dist = build_thread_size_distribution(
         group_df,
         "group",
@@ -316,14 +487,19 @@ def main() -> None:
             tables_dir
             / "thread_size_distribution_table.csv"
         )
+
         pd.concat(
-            [direct_dist, group_dist],
+            [
+                direct_dist,
+                group_dist,
+            ],
             ignore_index=True,
         ).to_csv(
             source_path,
             index=False,
             encoding="utf-8",
         )
+
         print("Saved figure-source table:")
         print(source_path)
 
